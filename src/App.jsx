@@ -1,30 +1,55 @@
-import { useState } from 'react'
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { MainLayout } from './components/layout/MainLayout';
+import { DashboardPage } from './pages/DashboardPage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { OnboardingPage } from './pages/OnboardingPage';
+import { TransactionPage } from './pages/TransactionPage';
+import { UploadPage } from './pages/UploadPage';
+import { AddTransactionPage } from './pages/AddTransactionPage';
+import { BudgetPage } from './pages/BudgetPage';
+import { InsightsPage } from './pages/InsightsPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { SettingsPage } from './pages/SettingsPage';
+import { InvestmentPage } from './pages/InvestmentPage';
+import { useAppContext } from './context/AppContext';
+
+// Protected Route wrapper
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAppContext();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navbar */}
-      <nav className="bg-white shadow-md p-4 flex justify-between">
-        <h1 className="font-bold text-xl text-blue-600">FinSight</h1>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded">
-          Login
-        </button>
-      </nav>
-
-      {/* Content */}
-      <div className="p-6">
-        <h2 className="text-2xl font-semibold mb-4">
-          Dashboard
-        </h2>
-
-        <div className="bg-white p-4 rounded shadow">
-          <p className="text-gray-600">
-            Selamat datang di aplikasi kamu 🚀
-          </p>
-        </div>
-      </div>
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        
+        <Route path="/" element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<DashboardPage />} />
+          <Route path="transactions" element={<TransactionPage />} />
+          <Route path="budget" element={<BudgetPage />} />
+          <Route path="insights" element={<InsightsPage />} />
+          <Route path="investments" element={<InvestmentPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="add" element={<AddTransactionPage />} />
+          <Route path="upload" element={<UploadPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
