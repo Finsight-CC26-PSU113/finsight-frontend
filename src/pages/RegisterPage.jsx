@@ -4,15 +4,20 @@ import { Sparkles, ArrowRight } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
+  const { login } = useAppContext();
 
   const handleRegister = (e) => {
     e.preventDefault();
-    // In a real app, you would create the user here
-    // For this prototype, we'll navigate directly to onboarding
-    navigate('/onboarding');
+    // Set onboarding survey flag for popup on Dashboard
+    localStorage.setItem('needs_onboarding_survey', 'true');
+    // Log user in directly
+    login();
+    // Navigate straight to dashboard
+    navigate('/');
   };
 
   return (
