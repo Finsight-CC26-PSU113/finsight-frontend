@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Receipt, PieChart, Sparkles, User, Settings, LogOut, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Receipt, PieChart, Sparkles, Settings, LogOut, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 export const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
@@ -12,7 +12,6 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     { name: 'Anggaran', path: '/budget', icon: PieChart },
     { name: 'Wawasan AI', path: '/insights', icon: Sparkles },
     { name: 'Investasi', path: '/investments', icon: TrendingUp },
-    { name: 'Profil', path: '/profile', icon: User },
   ];
 
   return (

@@ -1,9 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Receipt, PieChart, Sparkles, User, Plus, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Receipt, PieChart, Sparkles, Plus, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAppContext } from '../../context/AppContext';
 
 export const BottomNav = () => {
+  const { openAddTxModal } = useAppContext();
+  
   const navItems = [
     { name: 'Beranda', path: '/', icon: LayoutDashboard },
     { name: 'Transaksi', path: '/transactions', icon: Receipt },
@@ -20,8 +23,9 @@ export const BottomNav = () => {
           return (
             <motion.button
               key={item.name}
+              onClick={openAddTxModal}
               whileTap={{ scale: 0.9 }}
-              className="relative -top-6 bg-gradient-to-tr from-primary-600 to-ai w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary-500/30 border-4 border-white"
+              className="relative -top-6 bg-gradient-to-tr from-primary-600 to-ai w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary-500/30 border-4 border-white cursor-pointer"
             >
               <item.icon className="w-6 h-6" />
             </motion.button>
