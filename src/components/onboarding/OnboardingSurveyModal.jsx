@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { useNavigate } from 'react-router-dom';
-import { useAppContext } from '../context/AppContext';
-import { RiskQuestionCard } from '../components/onboarding/RiskQuestionCard';
+import { Modal } from '../ui/Modal';
+import { Button } from '../ui/Button';
+import { RiskQuestionCard } from './RiskQuestionCard';
 import { ShieldCheck, Target, TrendingUp, CheckCircle2 } from 'lucide-react';
 
 const riskQuestions = [
@@ -74,10 +72,7 @@ const riskQuestions = [
   }
 ];
 
-export const OnboardingPage = () => {
-  const navigate = useNavigate();
-  const { login } = useAppContext();
-  
+export const OnboardingSurveyModal = ({ isOpen, onComplete }) => {
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({});
 
@@ -85,29 +80,10 @@ export const OnboardingPage = () => {
   const isFinished = step > totalQuestions;
 
   const handleNext = () => {
-    // If not on result page, ensure an answer is selected
     if (!isFinished && !answers[step]) {
       return; 
     }
     setStep(step + 1);
-  };
-
-  const handleFinish = () => {
-    // Save survey results to localStorage for Dashboard Page display
-    localStorage.setItem('onboarding_score', totalScore);
-    localStorage.setItem('onboarding_profile', riskProfile);
-    localStorage.setItem('onboarding_desc', riskDesc);
-    localStorage.setItem('show_onboarding_popup', 'true');
-    
-    login();
-    navigate('/');
-  };
-
-  const handleSelectOption = (score) => {
-    setAnswers(prev => ({
-      ...prev,
-      [step]: score
-    }));
   };
 
   // Calculate Result
@@ -134,15 +110,40 @@ export const OnboardingPage = () => {
     iconColor = "text-orange-500 bg-orange-50";
   }
 
+  const handleFinish = () => {
+    // Save survey results to localStorage for Dashboard Page display
+    localStorage.setItem('onboarding_score', totalScore);
+    localStorage.setItem('onboarding_profile', riskProfile);
+    localStorage.setItem('onboarding_desc', riskDesc);
+    localStorage.setItem('show_onboarding_popup', 'true');
+    localStorage.removeItem('needs_onboarding_survey');
+    
+    if (onComplete) {
+      onComplete();
+    }
+  };
+
+  const handleSelectOption = (score) => {
+    setAnswers(prev => ({
+      ...prev,
+      [step]: score
+    }));
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
-        
+    <Modal
+      isOpen={isOpen}
+      onClose={() => {}} // Do nothing on close, mandatory
+      title={isFinished ? "Analisis Profil Finansial" : "Personalisasi AI Finsight"}
+      maxWidth="max-w-2xl"
+      hideCloseButton={true}
+    >
+      <div className="space-y-6">
         {/* Progress Bar (Only show during questions) */}
         {!isFinished && (
-          <div className="mb-8 px-4">
+          <div className="px-1">
             <div className="flex justify-between text-xs font-semibold text-slate-500 mb-2">
-              <span>Profil Risiko</span>
+              <span>Profil Risiko & Finansial</span>
               <span>{Math.round((step / totalQuestions) * 100)}%</span>
             </div>
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
@@ -156,7 +157,7 @@ export const OnboardingPage = () => {
           </div>
         )}
 
-        <Card className="p-6 md:p-10 overflow-hidden relative shadow-xl shadow-slate-200/50">
+        <div className="overflow-hidden min-h-[300px] flex flex-col justify-between">
           <AnimatePresence mode="wait">
             {!isFinished ? (
               <RiskQuestionCard 
@@ -173,28 +174,28 @@ export const OnboardingPage = () => {
                 key="result"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-6"
+                className="text-center space-y-6 py-4"
               >
                 <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto ${iconColor}`}>
                   <ProfileIcon className="w-10 h-10" />
                 </div>
                 
                 <div>
-                  <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Profil Anda: {riskProfile}</h2>
-                  <p className="text-slate-600 leading-relaxed max-w-md mx-auto">
+                  <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Profil Anda: {riskProfile}</h2>
+                  <p className="text-slate-600 leading-relaxed max-w-md mx-auto text-sm">
                     {riskDesc}
                   </p>
                 </div>
 
                 <div className="bg-slate-50 p-5 rounded-2xl text-left space-y-4 border border-slate-100 max-w-md mx-auto">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
                     <CheckCircle2 className="w-5 h-5 text-green-500" />
                     Personalisasi AI Selesai
                   </h3>
-                  <ul className="space-y-2 text-sm text-slate-600 ml-7 list-disc">
-                    <li>Rekomendasi anggaran disesuaikan</li>
-                    <li>Saran instrumen disesuaikan dengan tingkat risiko</li>
-                    <li>Notifikasi pengingat otomatis diaktifkan</li>
+                  <ul className="space-y-2 text-xs text-slate-600 ml-7 list-disc">
+                    <li>Rekomendasi anggaran bulanan disesuaikan</li>
+                    <li>Saran instrumen investasi dicocokkan dengan profil Anda</li>
+                    <li>Deteksi anomali & notifikasi otomatis aktif</li>
                   </ul>
                 </div>
               </motion.div>
@@ -220,12 +221,12 @@ export const OnboardingPage = () => {
               </Button>
             ) : (
               <Button onClick={handleFinish} fullWidth size="lg">
-                Selesai & Ke Dasbor
+                Selesai & Mulai Eksplorasi
               </Button>
             )}
           </div>
-        </Card>
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 };

@@ -18,7 +18,7 @@ export const AddTransactionPage = () => {
     date: new Date().toISOString().split('T')[0]
   });
 
-  const categories = [
+  const expenseCategories = [
     "transportasi", 
     "belanja", 
     "makanan", 
@@ -30,6 +30,13 @@ export const AddTransactionPage = () => {
     "tagihan", 
     "lainnya"
   ];
+
+  const incomeCategories = [
+    "pendapatan",
+    "lainnya"
+  ];
+
+  const categories = formData.type === 'expense' ? expenseCategories : incomeCategories;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -87,7 +94,7 @@ export const AddTransactionPage = () => {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => setFormData({...formData, type: 'expense'})}
+                onClick={() => setFormData({...formData, type: 'expense', category: 'makanan'})}
                 className={`py-3 rounded-xl border-2 font-semibold transition-colors ${
                   formData.type === 'expense' 
                     ? 'border-red-500 bg-red-50 text-red-700' 
@@ -98,7 +105,7 @@ export const AddTransactionPage = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setFormData({...formData, type: 'income'})}
+                onClick={() => setFormData({...formData, type: 'income', category: 'pendapatan'})}
                 className={`py-3 rounded-xl border-2 font-semibold transition-colors ${
                   formData.type === 'income' 
                     ? 'border-green-500 bg-green-50 text-green-700' 

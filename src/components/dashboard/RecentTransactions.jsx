@@ -62,9 +62,9 @@ export const RecentTransactions = () => {
                   </div>
                 </div>
                 
-                <div className={`flex items-center gap-1 font-bold ${isIncome ? 'text-green-600' : 'text-slate-900'}`}>
-                  {isIncome ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4 text-red-500" />}
-                  {isIncome ? '+' : ''}{Math.abs(tx.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
+                <div className={`flex items-center gap-1 font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+                  {isIncome ? <ArrowUpRight className="w-4 h-4 text-green-600" /> : <ArrowDownRight className="w-4 h-4 text-red-600" />}
+                  {isIncome ? '+' : '-'}{Math.abs(tx.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
                 </div>
               </motion.div>
             );

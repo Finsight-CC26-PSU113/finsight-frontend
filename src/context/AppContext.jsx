@@ -9,6 +9,12 @@ export const AppProvider = ({ children }) => {
   const [budgets, setBudgets] = useState(mockBudgets);
   const [insights, setInsights] = useState(mockInsights);
   const [isAuthenticated, setIsAuthenticated] = useState(true); // Default to true for dev
+  const [isAddTxModalOpen, setIsAddTxModalOpen] = useState(false);
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+
+  const openAddTxModal = () => setIsAddTxModalOpen(true);
+  const closeAddTxModal = () => setIsAddTxModalOpen(false);
 
   const addTransaction = (transaction) => {
     setTransactions([
@@ -55,6 +61,13 @@ export const AppProvider = ({ children }) => {
       budgets,
       insights,
       isAuthenticated,
+      isAddTxModalOpen,
+      openAddTxModal,
+      closeAddTxModal,
+      globalSearchTerm,
+      setGlobalSearchTerm,
+      hasUnreadNotifications,
+      setHasUnreadNotifications,
       addTransaction,
       deleteTransaction,
       addBudget,
