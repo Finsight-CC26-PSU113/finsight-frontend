@@ -1,48 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Bell, Moon, Sun, Shield, Lock, CreditCard, HelpCircle, Smartphone, Globe } from 'lucide-react';
+import { User, Bell, Shield, Lock, CreditCard, HelpCircle, Smartphone } from 'lucide-react';
 
 export const SettingsPage = () => {
-  const [theme, setTheme] = useState('light');
+  const navigate = useNavigate();
 
   const settingsSections = [
     {
-      title: "Preferensi Aplikasi",
+      title: "Akun Saya",
       items: [
         {
-          id: 'theme',
-          icon: theme === 'light' ? Sun : Moon,
-          title: "Tema Aplikasi",
-          description: "Pilih antara mode terang dan gelap untuk aplikasi.",
+          id: 'profile-edit',
+          icon: User,
+          title: "Profil Akun",
+          description: "Perbarui informasi pribadi, pendapatan, dan pengeluaran bulanan Anda.",
           action: (
-            <div className="flex bg-slate-100 p-1 rounded-lg">
-              <button 
-                onClick={() => setTheme('light')}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${theme === 'light' ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-500'}`}
-              >
-                Terang
-              </button>
-              <button 
-                onClick={() => setTheme('dark')}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${theme === 'dark' ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-500'}`}
-              >
-                Gelap
-              </button>
-            </div>
-          )
-        },
-        {
-          id: 'language',
-          icon: Globe,
-          title: "Bahasa",
-          description: "Pilih bahasa antarmuka yang Anda inginkan.",
-          action: (
-            <select className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2 outline-none">
-              <option>English (US)</option>
-              <option>Bahasa Indonesia</option>
-            </select>
+            <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+              Kelola Profil
+            </Button>
           )
         }
       ]

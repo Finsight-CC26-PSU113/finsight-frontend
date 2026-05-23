@@ -7,7 +7,6 @@ import { RegisterPage } from './pages/RegisterPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { TransactionPage } from './pages/TransactionPage';
 import { UploadPage } from './pages/UploadPage';
-import { AddTransactionPage } from './pages/AddTransactionPage';
 import { BudgetPage } from './pages/BudgetPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -44,7 +43,6 @@ function App() {
           <Route path="investments" element={<InvestmentPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
-          <Route path="add" element={<AddTransactionPage />} />
           <Route path="upload" element={<UploadPage />} />
         </Route>
       </Routes>

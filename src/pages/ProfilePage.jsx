@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useAppContext } from '../context/AppContext';
-import { User, Settings, Target, Bell, Moon, Sun, Shield, CreditCard, LogOut } from 'lucide-react';
+import { User, Settings, Target, Bell, Shield, CreditCard, LogOut } from 'lucide-react';
 
 export const ProfilePage = () => {
   const { user, logout } = useAppContext();
-  const [theme, setTheme] = useState('light');
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -98,33 +97,6 @@ export const ProfilePage = () => {
               </h3>
               
               <div className="space-y-4">
-                {/* Theme Toggle */}
-                <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
-                      {theme === 'light' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">Tema Aplikasi</p>
-                      <p className="text-xs text-slate-500">Beralih mode gelap/terang</p>
-                    </div>
-                  </div>
-                  <div className="flex bg-slate-100 p-1 rounded-lg">
-                    <button 
-                      onClick={() => setTheme('light')}
-                      className={`px-3 py-1 text-sm rounded-md transition-colors ${theme === 'light' ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-500'}`}
-                    >
-                      Terang
-                    </button>
-                    <button 
-                      onClick={() => setTheme('dark')}
-                      className={`px-3 py-1 text-sm rounded-md transition-colors ${theme === 'dark' ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-500'}`}
-                    >
-                      Gelap
-                    </button>
-                  </div>
-                </div>
-
                 {/* Notifications */}
                 <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
                   <div className="flex items-center gap-3">
