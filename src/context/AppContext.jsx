@@ -12,6 +12,7 @@ export const AppProvider = ({ children }) => {
   const [isAddTxModalOpen, setIsAddTxModalOpen] = useState(false);
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+  const [dashboardMode, setDashboardMode] = useState('lite');
 
   const openAddTxModal = () => setIsAddTxModalOpen(true);
   const closeAddTxModal = () => setIsAddTxModalOpen(false);
@@ -72,7 +73,9 @@ export const AppProvider = ({ children }) => {
       deleteTransaction,
       addBudget,
       login,
-      logout
+      logout,
+      dashboardMode,
+      setDashboardMode,
     }}>
       {children}
     </AppContext.Provider>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HeroInsight } from '../components/dashboard/HeroInsight';
 import { SummaryCards } from '../components/dashboard/SummaryCards';
 import { SpendingChart } from '../components/dashboard/SpendingChart';
@@ -8,13 +9,12 @@ import { AnomalyDetectionWidget } from '../components/dashboard/AnomalyDetection
 import { InvestmentPortfolioWidget } from '../components/dashboard/InvestmentPortfolioWidget';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
-import { ShieldCheck, Target, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Target, TrendingUp } from 'lucide-react';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import { OnboardingSurveyModal } from '../components/onboarding/OnboardingSurveyModal';
 
 export const DashboardPage = () => {
-  const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  const navigate = useNavigate();
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
   // Retrieve onboarding results with solid Moderat fallbacks
@@ -22,31 +22,23 @@ export const DashboardPage = () => {
   const [riskDesc, setRiskDesc] = useState(localStorage.getItem('onboarding_desc') || 'Anda cukup toleran terhadap risiko demi pertumbuhan aset. FINSIGHT akan membantu merancang strategi seimbang antara keamanan dan investasi.');
 
   useEffect(() => {
-    // Check if user needs the onboarding survey popup first
+    // Redirect to dedicated onboarding page if survey not yet completed
     const needsSurvey = localStorage.getItem('needs_onboarding_survey') === 'true';
     if (needsSurvey) {
-      setIsSurveyModalOpen(true);
-    } else {
-      // Check if onboarding results need to be shown
-      const showPopup = localStorage.getItem('show_onboarding_popup');
-      if (showPopup === 'true') {
-        setIsResultModalOpen(true);
-      }
+      navigate('/onboarding');
+      return;
+    }
+
+    // Check if onboarding results need to be shown after returning from onboarding
+    const showPopup = localStorage.getItem('show_onboarding_popup');
+    if (showPopup === 'true') {
+      const newProfile = localStorage.getItem('onboarding_profile') || 'Mid Risk (Moderat)';
+      const newDesc = localStorage.getItem('onboarding_desc') || 'Anda cukup toleran terhadap risiko demi pertumbuhan aset.';
+      setRiskProfile(newProfile);
+      setRiskDesc(newDesc);
+      setIsResultModalOpen(true);
     }
   }, []);
-
-  const handleSurveyComplete = () => {
-    setIsSurveyModalOpen(false);
-    
-    // Update local states to load newly computed profile immediately
-    const newProfile = localStorage.getItem('onboarding_profile') || 'Mid Risk (Moderat)';
-    const newDesc = localStorage.getItem('onboarding_desc') || 'Anda cukup toleran terhadap risiko demi pertumbuhan aset.';
-    setRiskProfile(newProfile);
-    setRiskDesc(newDesc);
-    
-    // Open results popup modal automatically
-    setIsResultModalOpen(true);
-  };
 
   const handleCloseResultModal = () => {
     setIsResultModalOpen(false);
@@ -59,6 +51,8 @@ export const DashboardPage = () => {
   };
 
   const startTour = () => {
+    if (window.innerWidth < 768) return;
+
     const driverObj = driver({
       showProgress: true,
       nextBtnText: 'Lanjut &rarr;',
@@ -214,18 +208,6 @@ export const DashboardPage = () => {
             </p>
           </div>
 
-          <div className="bg-slate-50 p-5 rounded-2xl text-left space-y-3.5 border border-slate-100/50">
-            <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
-              <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-              Personalisasi AI Aktif
-            </h3>
-            <ul className="space-y-2 text-xs text-slate-500 ml-7 list-disc leading-relaxed">
-              <li>Dasbor keuangan premium disesuaikan dengan profil Anda</li>
-              <li>Rekomendasi investasi khusus berdasar toleransi risiko</li>
-              <li>Peringatan anomali pengeluaran otomatis diaktifkan</li>
-            </ul>
-          </div>
-
           <div className="pt-2">
             <Button onClick={handleCloseResultModal} fullWidth size="lg" className="rounded-xl flex items-center justify-center gap-2 font-bold cursor-pointer">
               Mulai Panduan Aplikasi &rarr;
@@ -234,10 +216,6 @@ export const DashboardPage = () => {
         </div>
       </Modal>
 
-      <OnboardingSurveyModal
-        isOpen={isSurveyModalOpen}
-        onComplete={handleSurveyComplete}
-      />
     </div>
   );
 };

@@ -222,7 +222,7 @@ export const BudgetPage = () => {
                     formatter={(value) => formatRp(value)}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                   />
-                  <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" />
+                  <Legend verticalAlign="bottom" align="center" layout="horizontal" iconType="circle" />
                 </PieChart>
               </ResponsiveContainer>
             </div>

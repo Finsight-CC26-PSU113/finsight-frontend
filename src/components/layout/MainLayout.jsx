@@ -15,13 +15,14 @@ export const MainLayout = () => {
   return (
     <div className="min-h-screen bg-surface-muted flex relative">
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+
       <div className={`flex-1 flex flex-col w-full relative transition-all duration-300 ${isCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
         <Topbar />
-        <main className="flex-1 p-6 md:p-8 pb-24 md:pb-8 overflow-y-auto w-full max-w-7xl mx-auto">
+        <main className="flex-1 p-6 md:p-8 pb-32 md:pb-8 w-full max-w-7xl mx-auto">
           <Outlet />
         </main>
-        
-        {/* Global Desktop FAB */}
+
+        {/* Desktop FAB */}
         <motion.button
           onClick={openAddTxModal}
           whileHover={{ scale: 1.05 }}
@@ -31,6 +32,7 @@ export const MainLayout = () => {
           <Plus className="w-6 h-6" />
         </motion.button>
       </div>
+
       <BottomNav />
       <AddTransactionModal isOpen={isAddTxModalOpen} onClose={closeAddTxModal} />
     </div>

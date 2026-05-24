@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Bell, Search, Menu, AlertTriangle, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Bell, Search, AlertTriangle, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal } from '../ui/Modal';
 
 export const Topbar = () => {
-  const { 
-    user, 
-    insights, 
-    hasUnreadNotifications, 
-    setHasUnreadNotifications, 
-    globalSearchTerm, 
-    setGlobalSearchTerm 
+  const {
+    user,
+    insights,
+    hasUnreadNotifications,
+    setHasUnreadNotifications,
+    globalSearchTerm,
+    setGlobalSearchTerm,
+    dashboardMode,
+    setDashboardMode,
   } = useAppContext();
 
   const navigate = useNavigate();
@@ -36,30 +38,54 @@ export const Topbar = () => {
   };
 
   return (
-    <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30 transition-all duration-300">
-      <div className="flex items-center gap-4">
-        <button className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
-          <Menu className="w-6 h-6" />
-        </button>
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900 hidden md:block">{greeting}, {user.name} 👋</h1>
-          <p className="text-sm text-slate-500 hidden md:block">Berikut ini ringkasan keuangan Anda.</p>
+    <header className="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center gap-4 px-4 md:px-6 sticky top-0 z-30">
+      {/* Left: greeting (desktop only) + search bar */}
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="hidden md:block shrink-0">
+          <h1 className="text-xl font-semibold text-slate-900">{greeting}, {user.name} 👋</h1>
+          <p className="text-sm text-slate-500">Berikut ini ringkasan keuangan Anda.</p>
+        </div>
+
+        <div className="relative flex-1 md:flex-none">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Cari transaksi..."
+            value={globalSearchTerm}
+            onChange={handleSearchChange}
+            className="w-full md:w-64 pl-9 pr-4 py-2 bg-slate-100 border-transparent rounded-full text-sm focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all outline-none font-medium"
+          />
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input 
-            type="text" 
-            placeholder="Cari transaksi..." 
-            value={globalSearchTerm}
-            onChange={handleSearchChange}
-            className="pl-9 pr-4 py-2 bg-slate-100 border-transparent rounded-full text-sm focus:bg-white focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all w-48 md:w-64 outline-none font-medium"
-          />
+      {/* Right: mode toggle + bell + avatar */}
+      <div className="flex items-center gap-2 md:gap-3 shrink-0">
+
+        {/* Lite / Pro toggle */}
+        <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-xs font-bold">
+          <button
+            onClick={() => setDashboardMode('lite')}
+            className={`px-3 py-1 rounded-full transition-all duration-200 ${
+              dashboardMode === 'lite'
+                ? 'bg-white text-primary-600 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Lite
+          </button>
+          <button
+            onClick={() => setDashboardMode('pro')}
+            className={`px-3 py-1 rounded-full transition-all duration-200 ${
+              dashboardMode === 'pro'
+                ? 'bg-white text-primary-600 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Pro
+          </button>
         </div>
-        
-        <button 
+
+        <button
           onClick={handleOpenNotifications}
           className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
         >
@@ -69,10 +95,10 @@ export const Topbar = () => {
           )}
         </button>
 
-        <div 
+        <div
           onClick={() => navigate('/profile')}
           title="Profil Saya"
-          className="w-10 h-10 rounded-full border-2 border-primary-100 overflow-hidden cursor-pointer hover:border-primary-300 transition-colors"
+          className="hidden md:block w-10 h-10 rounded-full border-2 border-primary-100 overflow-hidden cursor-pointer hover:border-primary-300 transition-colors shrink-0"
         >
           <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
         </div>
