@@ -1,9 +1,9 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { User, Bell, Shield, Lock, CreditCard, HelpCircle, Smartphone } from 'lucide-react';
+import React from "react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { User, Bell, Shield, Lock, CreditCard, HelpCircle, Smartphone } from "lucide-react";
 
 export const SettingsPage = () => {
   const navigate = useNavigate();
@@ -13,23 +13,23 @@ export const SettingsPage = () => {
       title: "Akun Saya",
       items: [
         {
-          id: 'profile-edit',
+          id: "profile-edit",
           icon: User,
           title: "Profil Akun",
           description: "Perbarui informasi pribadi, pendapatan, dan pengeluaran bulanan Anda.",
           action: (
-            <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/profile")}>
               Kelola Profil
             </Button>
-          )
-        }
-      ]
+          ),
+        },
+      ],
     },
     {
       title: "Notifikasi",
       items: [
         {
-          id: 'push-notif',
+          id: "push-notif",
           icon: Bell,
           title: "Notifikasi Push",
           description: "Terima peringatan untuk transaksi besar dan wawasan AI.",
@@ -38,10 +38,10 @@ export const SettingsPage = () => {
               <input type="checkbox" className="sr-only peer" defaultChecked />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
-          )
+          ),
         },
         {
-          id: 'email-notif',
+          id: "email-notif",
           icon: Smartphone,
           title: "Laporan Email",
           description: "Terima ringkasan laporan keuangan mingguan dan bulanan.",
@@ -50,41 +50,53 @@ export const SettingsPage = () => {
               <input type="checkbox" className="sr-only peer" />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
-          )
-        }
-      ]
+          ),
+        },
+      ],
     },
     {
       title: "Keamanan & Privasi",
       items: [
         {
-          id: 'password',
+          id: "password",
           icon: Lock,
           title: "Ubah Kata Sandi",
           description: "Perbarui kata sandi akun Anda.",
-          action: <Button variant="outline" size="sm">Perbarui</Button>
+          action: (
+            <Button variant="outline" size="sm" onClick={() => navigate("/forgot-password")}>
+              Perbarui
+            </Button>
+          ),
         },
         {
-          id: '2fa',
+          id: "2fa",
           icon: Shield,
           title: "Autentikasi Dua Faktor",
           description: "Tambahkan lapisan keamanan ekstra pada akun Anda.",
-          action: <Button variant="outline" size="sm">Aktifkan 2FA</Button>
-        }
-      ]
+          action: (
+            <Button variant="outline" size="sm">
+              Aktifkan 2FA
+            </Button>
+          ),
+        },
+      ],
     },
     {
       title: "Tagihan & Langganan",
       items: [
         {
-          id: 'plan',
+          id: "plan",
           icon: CreditCard,
           title: "Paket Saat Ini",
           description: "Anda saat ini menggunakan paket FINSIGHT Pro.",
-          action: <Button variant="outline" size="sm" className="text-primary-600 border-primary-200 hover:bg-primary-50">Kelola Paket</Button>
-        }
-      ]
-    }
+          action: (
+            <Button variant="outline" size="sm" className="text-primary-600 border-primary-200 hover:bg-primary-50">
+              Kelola Paket
+            </Button>
+          ),
+        },
+      ],
+    },
   ];
 
   return (
@@ -96,16 +108,9 @@ export const SettingsPage = () => {
 
       <div className="space-y-6">
         {settingsSections.map((section, sectionIdx) => (
-          <motion.div 
-            key={section.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: sectionIdx * 0.1 }}
-          >
+          <motion.div key={section.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: sectionIdx * 0.1 }}>
             <Card className="overflow-hidden">
-              <h3 className="font-bold text-slate-900 px-2 pb-4 mb-2 border-b border-slate-100">
-                {section.title}
-              </h3>
+              <h3 className="font-bold text-slate-900 px-2 pb-4 mb-2 border-b border-slate-100">{section.title}</h3>
               <div className="space-y-2">
                 {section.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
@@ -118,9 +123,7 @@ export const SettingsPage = () => {
                         <p className="text-sm text-slate-500 hidden sm:block">{item.description}</p>
                       </div>
                     </div>
-                    <div className="shrink-0 ml-4">
-                      {item.action}
-                    </div>
+                    <div className="shrink-0 ml-4">{item.action}</div>
                   </div>
                 ))}
               </div>
@@ -128,12 +131,7 @@ export const SettingsPage = () => {
           </motion.div>
         ))}
 
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.5 }}
-          className="flex justify-center pt-4 pb-8"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex justify-center pt-4 pb-8">
           <Button variant="ghost" className="text-slate-500 flex items-center gap-2">
             <HelpCircle className="w-4 h-4" />
             Pusat Bantuan & Dukungan

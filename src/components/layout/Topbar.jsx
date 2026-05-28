@@ -3,6 +3,7 @@ import { Bell, Search, AlertTriangle, Sparkles, CheckCircle2 } from 'lucide-reac
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal } from '../ui/Modal';
+import { getAvatarFallbackStyle, getAvatarInitials } from '../../utils/profileAvatar';
 
 export const Topbar = () => {
   const {
@@ -58,10 +59,8 @@ export const Topbar = () => {
         </div>
       </div>
 
-      {/* Right: mode toggle + bell + avatar */}
+      {/* Right: Lite/Pro + bell + avatar */}
       <div className="flex items-center gap-2 md:gap-3 shrink-0">
-
-        {/* Lite / Pro toggle */}
         <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-xs font-bold">
           <button
             onClick={() => setDashboardMode('lite')}
@@ -100,7 +99,13 @@ export const Topbar = () => {
           title="Profil Saya"
           className="hidden md:block w-10 h-10 rounded-full border-2 border-primary-100 overflow-hidden cursor-pointer hover:border-primary-300 transition-colors shrink-0"
         >
-          <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
+          {user.avatar ? (
+            <img src={user.avatar} alt="User Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-xs font-bold" style={getAvatarFallbackStyle(user)}>
+              {getAvatarInitials(user.name)}
+            </div>
+          )}
         </div>
       </div>
 
@@ -110,13 +115,13 @@ export const Topbar = () => {
           {insights.map((notif) => {
             const isAlert = notif.type === 'alert';
             const isRec = notif.type === 'recommendation';
-            
+
             return (
-              <div 
-                key={notif.id} 
+              <div
+                key={notif.id}
                 className={`p-4 rounded-xl border flex gap-3 transition-all ${
-                  isAlert 
-                    ? 'bg-red-50/50 border-red-100 hover:bg-red-50' 
+                  isAlert
+                    ? 'bg-red-50/50 border-red-100 hover:bg-red-50'
                     : isRec
                     ? 'bg-blue-50/50 border-blue-100 hover:bg-blue-50'
                     : 'bg-green-50/50 border-green-100 hover:bg-green-50'
