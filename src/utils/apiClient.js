@@ -50,11 +50,13 @@ export const clearStoredAuthSession = () => {
 export const getApiBaseUrl = () => API_BASE_URL.replace(/\/$/, "");
 
 export const apiRequest = async (path, { token, headers, ...options } = {}) => {
+  const isFormDataBody = typeof FormData !== "undefined" && options?.body instanceof FormData;
+
   const response = await fetch(`${getApiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`, {
     credentials: "include",
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormDataBody ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },

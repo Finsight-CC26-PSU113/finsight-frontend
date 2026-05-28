@@ -290,8 +290,8 @@ export const AppProvider = ({ children }) => {
             if (!match || !match.id) continue;
             // Send create/upsert to backend
             try {
-              await apiRequest('/api/budgets', {
-                method: 'POST',
+              await apiRequest("/api/budgets", {
+                method: "POST",
                 token,
                 body: JSON.stringify({ category_id: match.id, amount: s.amount, period: currentPeriod() }),
               });
@@ -389,16 +389,16 @@ export const AppProvider = ({ children }) => {
 
   const updateTransaction = async (id, payload) => {
     if (!authToken) {
-      throw new Error('Anda harus masuk terlebih dahulu');
+      throw new Error("Anda harus masuk terlebih dahulu");
     }
 
     const response = await apiRequest(`/api/transactions/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       token: authToken,
       body: JSON.stringify({
         transaction_type: payload.type,
         amount: Math.abs(toNumber(payload.amount)),
-        payment_method: payload.paymentMethod || 'cash',
+        payment_method: payload.paymentMethod || "cash",
         transaction_date: payload.date || formatDateValue(),
         description: payload.title,
         ...(payload.category_id ? { category_id: payload.category_id } : {}),
@@ -548,7 +548,7 @@ export const AppProvider = ({ children }) => {
     }
 
     const response = await apiRequest("/api/auth/profile", {
-      method: "PUT",
+      method: "PATCH",
       token: authToken,
       body: JSON.stringify(payload),
     });
@@ -562,7 +562,9 @@ export const AppProvider = ({ children }) => {
       setStoredAuthSession({ token: authToken, user: updatedUser });
     }
 
-    await bootstrapAppData(authToken);
+    // Rehydrate the rest of the dashboard data, but do not fail the profile save
+    // if a dependent endpoint is temporarily unavailable.
+    bootstrapAppData(authToken).catch(() => null);
     return updatedUser;
   };
 
