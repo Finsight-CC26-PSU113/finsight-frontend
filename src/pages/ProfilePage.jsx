@@ -1,46 +1,86 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { useAppContext } from "../context/AppContext";
 import { User, Settings, Target, Bell, Shield, LogOut, Upload } from "lucide-react";
 import { getAvatarFallbackStyle, getAvatarInitials } from "../utils/profileAvatar";
+import { getApiBaseUrl, getStoredAuthSession } from "../utils/apiClient";
+
+const resolveMediaUrl = (value) => {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) {
+    return value;
+  }
+  return `${getApiBaseUrl()}/${String(value).replace(/^\/+/, "")}`;
+};
 
 export const ProfilePage = () => {
   const { user, logout, updateProfile } = useAppContext();
-  const [avatarPreview, setAvatarPreview] = useState(user.avatar || '');
-  const [pendingAvatar, setPendingAvatar] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(resolveMediaUrl(user.avatar));
+  const [pendingAvatarFile, setPendingAvatarFile] = useState(null);
   const avatarInputRef = useRef(null);
 
   const handleProfileSave = async (event) => {
     event.preventDefault();
 
     try {
-      await updateProfile({
-        name: event.currentTarget.name.value,
-        ...(pendingAvatar ? { avatar: pendingAvatar } : {}),
+      const formData = new FormData(event.currentTarget);
+      const name = String(formData.get("name") || "").trim() || user.name;
+
+      let uploadedAvatarPath = null;
+      if (pendingAvatarFile) {
+        const uploadPayload = new FormData();
+        uploadPayload.append("avatar", pendingAvatarFile);
+
+        const { token } = getStoredAuthSession();
+        const uploadResponse = await fetch(`${getApiBaseUrl()}/api/auth/profile/avatar`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: uploadPayload,
+        });
+
+        const uploadJson = await uploadResponse.json().catch(() => null);
+        if (!uploadResponse.ok) {
+          throw new Error(uploadJson?.message || "Gagal upload foto profil");
+        }
+
+        uploadedAvatarPath = uploadJson?.data?.avatar || uploadJson?.data?.user?.avatar || null;
+      }
+
+      const updatedUser = await updateProfile({
+        name,
       });
+
+      if (updatedUser?.avatar) {
+        setAvatarPreview(resolveMediaUrl(updatedUser.avatar));
+      } else if (uploadedAvatarPath) {
+        setAvatarPreview(resolveMediaUrl(uploadedAvatarPath));
+      }
+      setPendingAvatarFile(null);
+
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
     } catch (error) {
       window.alert(error.message || "Gagal menyimpan profil");
     }
   };
 
-  const handleAvatarPick = (event) => {
+  const handleAvatarPick = async (event) => {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      window.alert('Pilih file gambar.');
+    if (!file.type.startsWith("image/")) {
+      window.alert("Pilih file gambar.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || '');
-      setAvatarPreview(dataUrl);
-      setPendingAvatar(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    setAvatarPreview(URL.createObjectURL(file));
+    setPendingAvatarFile(file);
   };
 
   return (
@@ -57,11 +97,7 @@ export const ProfilePage = () => {
             <Card className="text-center">
               <div className="relative inline-block mb-4">
                 <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden mx-auto flex items-center justify-center" style={avatarPreview || user.avatar ? undefined : getAvatarFallbackStyle(user)}>
-                  {avatarPreview || user.avatar ? (
-                    <img src={avatarPreview || user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xl font-bold tracking-wide">{getAvatarInitials(user.name)}</span>
-                  )}
+                  {avatarPreview || user.avatar ? <img src={avatarPreview || resolveMediaUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" /> : <span className="text-xl font-bold tracking-wide">{getAvatarInitials(user.name)}</span>}
                 </div>
                 <button type="button" onClick={() => avatarInputRef.current?.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 rounded-full border-2 border-white flex items-center justify-center text-white hover:bg-primary-700 transition-colors" title="Ubah Profile">
                   <User className="w-4 h-4" />
@@ -124,7 +160,7 @@ export const ProfilePage = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Alamat Email</label>
-                    <input type="email" defaultValue={user.email || `${user.name.toLowerCase()}@example.com`} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
+                    <input type="email" value={user.email || `${user.name.toLowerCase()}@example.com`} readOnly className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg outline-none cursor-not-allowed" />
                   </div>
                 </div>
                 <div>
