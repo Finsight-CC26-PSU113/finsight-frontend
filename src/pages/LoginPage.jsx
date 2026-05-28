@@ -50,7 +50,7 @@ export const LoginPage = () => {
                 Alamat email
               </label>
               <div className="mt-1">
-                <input id="email" name="email" type="email" autoComplete="email" required defaultValue="demo@finsight.ai" className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                <input id="email" name="email" type="email" autoComplete="email" required placeholder="nama@email.com" className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
               </div>
             </div>
 
@@ -59,7 +59,7 @@ export const LoginPage = () => {
                 Kata sandi
               </label>
               <div className="mt-1">
-                <input id="password" name="password" type="password" autoComplete="current-password" required defaultValue="password" className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                <input id="password" name="password" type="password" autoComplete="current-password" required placeholder="Masukkan kata sandi" className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
               </div>
             </div>
 
