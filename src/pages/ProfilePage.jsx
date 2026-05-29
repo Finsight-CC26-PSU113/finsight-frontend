@@ -3,23 +3,19 @@ import { motion } from "framer-motion";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { useAppContext } from "../context/AppContext";
-import { User, Settings, Target, Bell, Shield, LogOut, Upload } from "lucide-react";
+import { User, Settings, Bell, Shield, LogOut, Upload } from "lucide-react";
+import { getApiBaseUrl } from "../utils/apiClient";
 import { getAvatarFallbackStyle, getAvatarInitials } from "../utils/profileAvatar";
-import { getApiBaseUrl, getStoredAuthSession } from "../utils/apiClient";
-
-const resolveMediaUrl = (value) => {
-  if (!value) return "";
-  if (/^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) {
-    return value;
-  }
-  return `${getApiBaseUrl()}/${String(value).replace(/^\/+/, "")}`;
-};
+import { getStoredAuthSession } from "../utils/apiClient";
+import { PROFILE_IMAGE_ACCEPT, getMemberSinceLabel, isAllowedProfileImageFile, resolveMediaUrl } from "../utils/profilePage";
 
 export const ProfilePage = () => {
   const { user, logout, updateProfile } = useAppContext();
-  const [avatarPreview, setAvatarPreview] = useState(resolveMediaUrl(user.avatar));
+  const [avatarPreview, setAvatarPreview] = useState("");
   const [pendingAvatarFile, setPendingAvatarFile] = useState(null);
   const avatarInputRef = useRef(null);
+
+  const memberSinceLabel = getMemberSinceLabel(user.created_at || user.createdAt);
 
   const handleProfileSave = async (event) => {
     event.preventDefault();
@@ -55,10 +51,8 @@ export const ProfilePage = () => {
         name,
       });
 
-      if (updatedUser?.avatar) {
-        setAvatarPreview(resolveMediaUrl(updatedUser.avatar));
-      } else if (uploadedAvatarPath) {
-        setAvatarPreview(resolveMediaUrl(uploadedAvatarPath));
+      if (updatedUser?.avatar || uploadedAvatarPath) {
+        setAvatarPreview("");
       }
       setPendingAvatarFile(null);
 
@@ -74,8 +68,8 @@ export const ProfilePage = () => {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      window.alert("Pilih file gambar.");
+    if (!isAllowedProfileImageFile(file)) {
+      window.alert("Pilih file PNG, JPG, JPEG, atau SVG.");
       return;
     }
 
@@ -84,14 +78,13 @@ export const ProfilePage = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 px-1 sm:px-0">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Profil & Pengaturan</h1>
         <p className="text-slate-500">Kelola informasi pribadi dan preferensi Anda.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Profile Card */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <div className="md:col-span-1 space-y-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="text-center">
@@ -103,12 +96,12 @@ export const ProfilePage = () => {
                   <User className="w-4 h-4" />
                 </button>
               </div>
-              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarPick} />
+              <input ref={avatarInputRef} type="file" accept={PROFILE_IMAGE_ACCEPT} className="hidden" onChange={handleAvatarPick} />
               <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
               <p className="text-slate-500 text-sm mb-4">Profil pengguna</p>
 
               <div className="mt-4 flex items-center justify-center gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => avatarInputRef.current?.click()} className="inline-flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => avatarInputRef.current?.click()} className="inline-flex items-center justify-center gap-2 w-full sm:w-auto">
                   <Upload className="w-4 h-4" />
                   Ubah Profile
                 </Button>
@@ -117,7 +110,7 @@ export const ProfilePage = () => {
               <div className="pt-4 border-t border-slate-100 mt-4">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-slate-500">Anggota Sejak</span>
-                  <span className="font-semibold text-slate-900">Jan 2026</span>
+                  <span className="font-semibold text-slate-900">{memberSinceLabel}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Langganan</span>
@@ -130,30 +123,23 @@ export const ProfilePage = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <Card>
               <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Target className="w-5 h-5 text-primary-500" />
-                Tujuan Keuangan
+                <Settings className="w-5 h-5 text-slate-400" />
+                Ringkasan Akun
               </h3>
-              <div>
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm font-medium text-slate-700">Dana Darurat</span>
-                  <span className="text-sm font-bold text-slate-900">Rp 10.000.000</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
-                  <div className="bg-primary-500 h-2 rounded-full" style={{ width: "45%" }}></div>
-                </div>
-                <p className="text-xs text-slate-500 text-right">Tercapai 45%</p>
+              <div className="space-y-3 text-sm text-slate-600">
+                <p>Tujuan keuangan sekarang dikelola dari Beranda atau Anggaran.</p>
+                <p>Gunakan beranda untuk melihat progres dan budget untuk mengarahkan rencana.</p>
               </div>
             </Card>
           </motion.div>
         </div>
 
-        {/* Right Column: Settings */}
         <div className="md:col-span-2 space-y-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <Card>
               <h3 className="font-bold text-slate-900 mb-4 border-b border-slate-100 pb-4">Informasi Pribadi</h3>
               <form className="space-y-4" onSubmit={handleProfileSave}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap</label>
                     <input name="name" type="text" defaultValue={user.name} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
@@ -178,7 +164,6 @@ export const ProfilePage = () => {
               </h3>
 
               <div className="space-y-4">
-                {/* Notifications */}
                 <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
@@ -190,12 +175,11 @@ export const ProfilePage = () => {
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" value="" className="sr-only peer" defaultChecked />
+                    <input type="checkbox" value="" className="sr-only peer" checked={Boolean(user.push_notifications_enabled)} readOnly />
                     <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
 
-                {/* Security */}
                 <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
@@ -214,8 +198,8 @@ export const ProfilePage = () => {
             </Card>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-            <Button variant="danger" fullWidth className="py-3" onClick={logout}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="pt-1 md:hidden">
+            <Button variant="danger" fullWidth className="py-3 sm:w-auto sm:px-6" onClick={logout}>
               <LogOut className="w-5 h-5 mr-2" />
               Keluar dari FINSIGHT
             </Button>
