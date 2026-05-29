@@ -1,12 +1,47 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { useAppContext } from "../context/AppContext";
 import { User, Bell, Shield, Lock, CreditCard, HelpCircle, Smartphone } from "lucide-react";
 
 export const SettingsPage = () => {
   const navigate = useNavigate();
+  const { user, updateProfile } = useAppContext();
+  const [pushEnabled, setPushEnabled] = useState(Boolean(user.push_notifications_enabled));
+  const [emailEnabled, setEmailEnabled] = useState(Boolean(user.email_notifications_enabled));
+
+  useEffect(() => {
+    setPushEnabled(Boolean(user.push_notifications_enabled));
+    setEmailEnabled(Boolean(user.email_notifications_enabled));
+  }, [user.push_notifications_enabled, user.email_notifications_enabled]);
+
+  const handlePushToggle = async (checked) => {
+    setPushEnabled(checked);
+
+    if (checked && typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+
+    try {
+      await updateProfile({ push_notifications_enabled: checked });
+    } catch (error) {
+      setPushEnabled(!checked);
+      window.alert(error.message || "Gagal menyimpan pengaturan notifikasi push");
+    }
+  };
+
+  const handleEmailToggle = async (checked) => {
+    setEmailEnabled(checked);
+
+    try {
+      await updateProfile({ email_notifications_enabled: checked });
+    } catch (error) {
+      setEmailEnabled(!checked);
+      window.alert(error.message || "Gagal menyimpan pengaturan email");
+    }
+  };
 
   const settingsSections = [
     {
@@ -35,7 +70,7 @@ export const SettingsPage = () => {
           description: "Terima peringatan untuk transaksi besar dan wawasan AI.",
           action: (
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <input type="checkbox" className="sr-only peer" checked={pushEnabled} onChange={(event) => handlePushToggle(event.target.checked)} />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           ),
@@ -47,7 +82,7 @@ export const SettingsPage = () => {
           description: "Terima ringkasan laporan keuangan mingguan dan bulanan.",
           action: (
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" />
+              <input type="checkbox" className="sr-only peer" checked={emailEnabled} onChange={(event) => handleEmailToggle(event.target.checked)} />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           ),
@@ -100,7 +135,7 @@ export const SettingsPage = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 px-1 sm:px-0">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Pengaturan</h1>
         <p className="text-slate-500">Kelola konfigurasi aplikasi dan keamanan Anda.</p>
@@ -113,17 +148,17 @@ export const SettingsPage = () => {
               <h3 className="font-bold text-slate-900 px-2 pb-4 mb-2 border-b border-slate-100">{section.title}</h3>
               <div className="space-y-2">
                 {section.items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                    <div className="flex items-center gap-4">
+                  <div key={item.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors gap-3">
+                    <div className="flex items-center gap-4 min-w-0">
                       <div className="p-2 bg-slate-100 rounded-lg text-slate-600 shrink-0">
                         <item.icon className="w-5 h-5" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-medium text-slate-900">{item.title}</p>
                         <p className="text-sm text-slate-500 hidden sm:block">{item.description}</p>
                       </div>
                     </div>
-                    <div className="shrink-0 ml-4">{item.action}</div>
+                    <div className="w-full sm:w-auto shrink-0 sm:ml-4">{item.action}</div>
                   </div>
                 ))}
               </div>
