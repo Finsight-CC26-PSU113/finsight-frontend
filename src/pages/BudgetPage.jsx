@@ -8,11 +8,13 @@ import { AlertTriangle, Plus, Target, Wallet, Save, Edit2, Trash2, Car, Utensils
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export const BudgetPage = () => {
-  const { budgets, addBudget, getBudgetSuggestions, applyBudgetSuggestion, applyAllBudgetSuggestions, user } = useAppContext();
+  const { budgets, addBudget, getBudgetSuggestions, applyBudgetSuggestion, applyAllBudgetSuggestions, user, categories, customCategories } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newBudget, setNewBudget] = useState({ category: "transportasi", total: "", color: "bg-blue-500" });
 
-  const categories = ["transportasi", "belanja", "makanan", "hiburan", "sosial", "pendidikan", "travel", "kesehatan dan perawatan diri", "tagihan", "lainnya"];
+  const budgetCategoryOptions = Array.from(new Set([...categories, ...customCategories].map((category) => category?.name).filter(Boolean)));
+  const fallbackCategories = ["transportasi", "belanja", "makanan", "hiburan", "sosial", "pendidikan", "travel", "kesehatan dan perawatan diri", "tagihan", "lainnya"];
+  const categoriesForSelect = budgetCategoryOptions.length > 0 ? budgetCategoryOptions : fallbackCategories;
 
   const colors = [
     { name: "Blue", value: "bg-blue-500" },
@@ -86,6 +88,8 @@ export const BudgetPage = () => {
   const totalRemaining = totalBudget - totalSpent;
   const isBudgetAlert = totalRemaining < 0;
   const overallPercentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const potentialSavings = Math.max(0, Number(user.monthlyIncome || 0) - Number(user.monthlyExpenses || 0) - totalSpent);
+  const aiSavings = Math.max(0, Math.round(totalSpent * 0.1));
 
   return (
     <div className="space-y-6">
@@ -94,20 +98,20 @@ export const BudgetPage = () => {
           <h1 className="text-2xl font-bold text-slate-900">Ringkasan Anggaran</h1>
           <p className="text-slate-500">Pantau batas pengeluaran dan tujuan Anda.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center gap-2">
           <Plus className="w-4 h-4" />
           Buat Anggaran
         </Button>
       </div>
       {/* Suggested Budgets */}
       <Card>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Saran Anggaran Berdasarkan Pemasukan</h2>
             <p className="text-sm text-slate-500">Kami merekomendasikan alokasi anggaran berdasarkan pemasukan bulanan Anda.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => applyAllBudgetSuggestions(user.monthlyIncome)} className="text-sm">
+          <div className="w-full sm:w-auto flex items-center gap-2">
+            <Button onClick={() => applyAllBudgetSuggestions(user.monthlyIncome)} className="text-sm w-full sm:w-auto">
               Terapkan Semua
             </Button>
           </div>
@@ -115,13 +119,13 @@ export const BudgetPage = () => {
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           {getBudgetSuggestions(user.monthlyIncome).map((s) => (
-            <div key={s.category} className="p-4 bg-slate-50 rounded-xl flex items-center justify-between">
+            <div key={s.category} className="p-4 bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-medium capitalize">{s.category}</div>
                 <div className="text-xs text-slate-500">Saran: Rp {s.amount.toLocaleString("id-ID")}</div>
               </div>
-              <div>
-                <Button size="sm" variant="outline" onClick={() => applyBudgetSuggestion(s.category, s.amount)}>
+              <div className="w-full sm:w-auto">
+                <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => applyBudgetSuggestion(s.category, s.amount)}>
                   Terapkan
                 </Button>
               </div>
@@ -135,7 +139,7 @@ export const BudgetPage = () => {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
             <select value={newBudget.category} onChange={(e) => setNewBudget({ ...newBudget, category: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none capitalize">
-              {categories.map((cat) => (
+              {categoriesForSelect.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
@@ -151,7 +155,7 @@ export const BudgetPage = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Label Warna</label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {colors.map((c) => (
                 <button key={c.value} type="button" onClick={() => setNewBudget({ ...newBudget, color: c.value })} className={`w-8 h-8 rounded-full ${c.value} ${newBudget.color === c.value ? "ring-2 ring-offset-2 ring-slate-400" : ""}`} />
               ))}
@@ -343,7 +347,7 @@ export const BudgetPage = () => {
               // Generate mock trend for the sparkline (removed per user request)
 
               return (
-                <motion.div key={budget.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + index * 0.1 }} className="p-6 hover:bg-slate-50/50 transition-colors">
+                <motion.div key={budget.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + index * 0.1 }} className="p-4 sm:p-6 hover:bg-slate-50/50 transition-colors">
                   <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                     {/* Left: Icon, Title & Status */}
                     <div className="flex items-start gap-4 lg:w-[40%]">
@@ -375,8 +379,8 @@ export const BudgetPage = () => {
                     </div>
 
                     {/* Actions & Detail */}
-                    <div className="lg:w-[15%] flex flex-row lg:flex-col justify-between items-end lg:items-end gap-3 shrink-0 lg:border-l lg:border-slate-100 lg:pl-4 mt-4 lg:mt-0">
-                      <div className="flex gap-1 w-full lg:w-auto justify-end">
+                    <div className="lg:w-[15%] flex flex-col sm:flex-row lg:flex-col justify-between sm:items-center lg:items-end gap-3 shrink-0 lg:border-l lg:border-slate-100 lg:pl-4 mt-4 lg:mt-0">
+                      <div className="flex gap-1 w-full sm:w-auto justify-end">
                         <button className="p-2 text-slate-400 hover:text-primary-600 transition-colors rounded-lg hover:bg-primary-50">
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -384,7 +388,7 @@ export const BudgetPage = () => {
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                      <Button variant="outline" size="sm" className="text-xs w-full whitespace-nowrap">
+                      <Button variant="outline" size="sm" className="text-xs w-full sm:w-auto whitespace-nowrap">
                         Lihat Detail
                       </Button>
                     </div>
@@ -407,8 +411,8 @@ export const BudgetPage = () => {
               </div>
               <span className="font-medium text-slate-700">Potensi Tabungan</span>
             </div>
-            <p className="text-3xl font-bold text-slate-900 mb-2">{formatRp(4250000)}</p>
-            <p className="text-sm font-medium text-green-500 flex items-center gap-1">↑ 12% dari bulan lalu</p>
+            <p className="text-3xl font-bold text-slate-900 mb-2">{formatRp(potentialSavings)}</p>
+            <p className="text-sm font-medium text-green-500 flex items-center gap-1">Berdasarkan income, expense, dan anggaran tersimpan</p>
           </Card>
         </motion.div>
 
@@ -421,7 +425,13 @@ export const BudgetPage = () => {
             <div className="relative z-10">
               <h3 className="text-slate-600 font-medium mb-3">Insight Finsight AI</h3>
               <p className="text-slate-800 leading-relaxed mb-4">
-                Kamu bisa menghemat sekitar <span className="text-primary-600 font-bold">{formatRp(500000)}</span> jika membatasi makan di luar minggu ini. Mau kami buatkan rencana makan hemat?
+                {aiSavings > 0 ? (
+                  <>
+                    Kamu bisa menghemat sekitar <span className="text-primary-600 font-bold">{formatRp(aiSavings)}</span> jika membatasi makan di luar minggu ini. Mau kami buatkan rencana makan hemat?
+                  </>
+                ) : (
+                  <>Tambahkan transaksi pengeluaran dan anggaran yang lebih lengkap supaya rekomendasi hemat dari AI muncul lebih akurat.</>
+                )}
               </p>
               <button className="text-primary-600 font-semibold text-sm hover:text-primary-700 flex items-center gap-1 group">
                 Lihat Analisis AI
