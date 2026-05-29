@@ -1,66 +1,59 @@
-import React from 'react';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { useAppContext } from '../../context/AppContext';
-import { motion } from 'framer-motion';
-import { Sparkles, AlertTriangle, Lightbulb, Target } from 'lucide-react';
+import React from "react";
+import { Card } from "../ui/Card";
+import { Button } from "../ui/Button";
+import { useAppContext } from "../../context/AppContext";
+import { motion } from "framer-motion";
+import { Sparkles, AlertTriangle, Lightbulb, Target } from "lucide-react";
 
 export const AiRecommendationFeed = () => {
   const { insights } = useAppContext();
-  
+
   // Filter out alerts since we have a dedicated Anomaly Detection widget
-  const feedInsights = insights.filter(insight => insight.type !== 'alert');
+  const feedInsights = insights.filter((insight) => insight.type !== "alert");
 
   const getIcon = (type) => {
-    switch(type) {
-      case 'recommendation': return <Lightbulb className="w-5 h-5 text-ai" />;
-      case 'positive': return <Target className="w-5 h-5 text-green-500" />;
-      default: return <Sparkles className="w-5 h-5 text-primary-500" />;
+    switch (type) {
+      case "recommendation":
+        return <Lightbulb className="w-5 h-5 text-ai" />;
+      case "alert":
+        return <AlertTriangle className="w-5 h-5 text-red-500" />;
+      case "positive":
+        return <Target className="w-5 h-5 text-green-500" />;
+      default:
+        return <Sparkles className="w-5 h-5 text-primary-500" />;
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.4 }}
-      className="space-y-4"
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="space-y-4">
       <h3 className="text-lg font-bold text-slate-900 px-1">Insight AI</h3>
-      
-      {feedInsights.map((insight, index) => (
-        <motion.div
-          key={insight.id}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5 + (index * 0.1) }}
-        >
-          <Card className="hover:border-ai/30 transition-colors cursor-pointer group">
-            <div className="flex gap-4">
-              <div className="shrink-0 mt-1">
-                <div className={`p-2 rounded-full ${
-                  insight.type === 'positive' ? 'bg-green-50' : 'bg-ai-light'
-                }`}>
-                  {getIcon(insight.type)}
+
+      {feedInsights.length === 0 ? (
+        <Card className="border-dashed border-slate-200 bg-slate-50/80">
+          <p className="text-sm text-slate-500">Belum ada insight AI yang tersinkron dari backend.</p>
+        </Card>
+      ) : (
+        feedInsights.map((insight, index) => (
+          <motion.div key={insight.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 + index * 0.1 }}>
+            <Card className="hover:border-ai/30 transition-colors cursor-pointer group">
+              <div className="flex gap-4">
+                <div className="shrink-0 mt-1">
+                  <div className={`p-2 rounded-full ${insight.type === "positive" ? "bg-green-50" : insight.type === "alert" ? "bg-red-50" : "bg-ai-light"}`}>{getIcon(insight.type)}</div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 group-hover:text-ai transition-colors">{insight.title}</h4>
+                  <p className="text-sm text-slate-500 mt-1 mb-3 leading-relaxed">{insight.description}</p>
+                  {insight.action && (
+                    <Button variant="outline" size="sm" className="text-xs">
+                      {insight.action}
+                    </Button>
+                  )}
                 </div>
               </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-slate-900 group-hover:text-ai transition-colors">
-                  {insight.title}
-                </h4>
-                <p className="text-sm text-slate-500 mt-1 mb-3 leading-relaxed">
-                  {insight.description}
-                </p>
-                {insight.action && (
-                  <Button variant="outline" size="sm" className="text-xs">
-                    {insight.action}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      ))}
+            </Card>
+          </motion.div>
+        ))
+      )}
     </motion.div>
   );
 };
