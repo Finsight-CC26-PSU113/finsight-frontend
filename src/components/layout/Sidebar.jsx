@@ -22,7 +22,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         {!isCollapsed && <span className="text-xl font-bold tracking-tight text-slate-900 truncate">FINSIGHT</span>}
 
         {/* Toggle Button */}
-        <button onClick={() => setIsCollapsed(!isCollapsed)} className={`absolute ${isCollapsed ? "-right-3" : "right-4"} top-1/2 -translate-y-1/2 bg-white border border-slate-200 rounded-full p-1 text-slate-400 hover:text-primary-600 hover:border-primary-200 shadow-sm transition-all z-10 ${isCollapsed ? "opacity-0 group-hover:opacity-100" : ""}`}>
+        <button type="button" aria-label={isCollapsed ? "Buka sidebar" : "Tutup sidebar"} onClick={() => setIsCollapsed((prev) => !prev)} className={`absolute ${isCollapsed ? "-right-3" : "right-4"} top-1/2 -translate-y-1/2 bg-white border border-slate-200 rounded-full p-1 text-slate-400 hover:text-primary-600 hover:border-primary-200 shadow-sm transition-all z-20 opacity-100`}>
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
