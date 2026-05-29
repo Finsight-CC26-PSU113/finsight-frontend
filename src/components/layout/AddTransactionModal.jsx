@@ -5,7 +5,7 @@ import { useAppContext } from "../../context/AppContext";
 import { Save, Sparkles } from "lucide-react";
 
 export const AddTransactionModal = ({ isOpen, onClose }) => {
-  const { addTransaction, editTx, updateTransaction } = useAppContext();
+  const { addTransaction, editTx, updateTransaction, categories, customCategories } = useAppContext();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -38,11 +38,12 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
     }
   }, [isOpen, editTx]);
 
-  const expenseCategories = ["transportasi", "belanja", "makanan", "hiburan", "sosial", "pendidikan", "travel", "kesehatan dan perawatan diri", "tagihan", "lainnya"];
+  const expenseCategories = Array.from(new Set([...categories, ...customCategories].map((category) => category?.name).filter(Boolean)));
+  const fallbackExpenseCategories = ["transportasi", "belanja", "makanan", "hiburan", "sosial", "pendidikan", "travel", "kesehatan dan perawatan diri", "tagihan", "lainnya"];
 
   const incomeCategories = ["pendapatan", "lainnya"];
 
-  const categories = formData.type === "expense" ? expenseCategories : incomeCategories;
+  const categoryOptions = formData.type === "expense" ? (expenseCategories.length > 0 ? expenseCategories : fallbackExpenseCategories) : incomeCategories;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -133,7 +134,7 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
                 <option value="" disabled>
                   Pilih Kategori
                 </option>
-                {categories.map((cat) => (
+                {categoryOptions.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
                   </option>
@@ -152,7 +153,7 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
           <div className="pt-2">
             <Button type="submit" fullWidth size="lg" className="flex items-center justify-center gap-2">
               <Save className="w-4 h-4" />
-              {editTx ? 'Perbarui Transaksi' : 'Simpan Transaksi'}
+              {editTx ? "Perbarui Transaksi" : "Simpan Transaksi"}
             </Button>
           </div>
         </form>
