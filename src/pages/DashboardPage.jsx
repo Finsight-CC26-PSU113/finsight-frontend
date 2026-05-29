@@ -5,7 +5,7 @@ import { SpendingChart } from "../components/dashboard/SpendingChart";
 import { RecentTransactions } from "../components/dashboard/RecentTransactions";
 import { AiRecommendationFeed } from "../components/dashboard/AiRecommendationFeed";
 import { AnomalyDetectionWidget } from "../components/dashboard/AnomalyDetectionWidget";
-import { InvestmentPortfolioWidget } from "../components/dashboard/InvestmentPortfolioWidget";
+import { FinancialGoalWidget } from "../components/dashboard/FinancialGoalWidget";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
 import { OnboardingSurveyModal } from "../components/onboarding/OnboardingSurveyModal";
@@ -129,15 +129,6 @@ export const DashboardPage = () => {
             align: "start",
           },
         },
-        {
-          element: "#tour-portfolio-widget",
-          popover: {
-            title: "Portofolio Investasi Pintar 📈",
-            description: "Pantau perkembangan aset dan alokasi dana investasi Anda agar tumbuh maksimal berdasar profil risiko Anda.",
-            side: "left",
-            align: "start",
-          },
-        },
       ],
     });
 
@@ -166,7 +157,7 @@ export const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Right Column: AI Insights, Anomaly, & Portfolio */}
+        {/* Right Column: AI Insights, Anomaly, & Goal */}
         <div className="w-full lg:w-1/3 flex flex-col gap-6">
           <div id="tour-anomaly-widget">
             <AnomalyDetectionWidget />
@@ -174,8 +165,8 @@ export const DashboardPage = () => {
           <div id="tour-ai-recommendations">
             <AiRecommendationFeed />
           </div>
-          <div id="tour-portfolio-widget">
-            <InvestmentPortfolioWidget />
+          <div id="tour-financial-goal">
+            <FinancialGoalWidget />
           </div>
         </div>
       </div>
