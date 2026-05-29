@@ -212,6 +212,7 @@ export const AppProvider = ({ children }) => {
   const [insights, setInsights] = useState([]);
   const [categories, setCategories] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
+  const [investments, setInvestments] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(Boolean(storedSession.token));
   const [isAuthReady, setIsAuthReady] = useState(!storedSession.token);
   const [isAddTxModalOpen, setIsAddTxModalOpen] = useState(false);
@@ -238,7 +239,7 @@ export const AppProvider = ({ children }) => {
       const profileResponse = await apiRequest("/api/auth/profile", { token });
       const profile = profileResponse?.data?.user || profileResponse?.data || null;
 
-      const [categoriesResponse, customCategoriesResponse, dashboardResponse, transactionsResponse, budgetsResponse, recommendationsResponse] = await Promise.all([apiRequest("/categories", { token }), apiRequest("/categories/custom", { token }), apiRequest("/api/dashboard/summary", { token }), apiRequest("/api/transactions", { token }), apiRequest(`/api/budgets?period=${currentPeriod()}`, { token }), apiRequest("/api/recommendations", { token })]);
+      const [categoriesResponse, customCategoriesResponse, dashboardResponse, transactionsResponse, budgetsResponse, recommendationsResponse, investmentsResponse] = await Promise.all([apiRequest("/categories", { token }), apiRequest("/categories/custom", { token }), apiRequest("/api/dashboard/summary", { token }), apiRequest("/api/transactions", { token }), apiRequest(`/api/budgets?period=${currentPeriod()}`, { token }), apiRequest("/api/recommendations", { token }), apiRequest("/api/investments", { token })]);
 
       const defaultCategories = categoriesResponse?.data?.categories || [];
       const userDefinedCategories = customCategoriesResponse?.data?.categories || [];
@@ -246,6 +247,7 @@ export const AppProvider = ({ children }) => {
       const rawTransactions = transactionsResponse?.data?.transactions || [];
       const rawBudgets = budgetsResponse?.data?.budgets || [];
       const rawRecommendations = recommendationsResponse?.data?.recommendations || [];
+      const investmentData = investmentsResponse?.data || null;
 
       const budgetProgressByCategoryId = (dashboardSummary.budget_progress || []).reduce((map, item) => {
         map[item.category_id] = item;
@@ -276,6 +278,7 @@ export const AppProvider = ({ children }) => {
       setTransactions(normalizedTransactions);
       setBudgets(normalizedBudgets);
       setInsights(normalizedInsights);
+      setInvestments(investmentData);
       setHasUnreadNotifications(normalizedInsights.some((item) => item.type === "alert" || item.type === "recommendation"));
       setIsAuthenticated(true);
       setIsAuthReady(true);
@@ -492,6 +495,7 @@ export const AppProvider = ({ children }) => {
       setInsights([]);
       setCategories([]);
       setCustomCategories([]);
+      setInvestments(null);
       setIsAuthenticated(false);
       setHasUnreadNotifications(false);
     }
@@ -577,6 +581,7 @@ export const AppProvider = ({ children }) => {
         insights,
         categories,
         customCategories,
+        investments,
         isAuthenticated,
         isAuthReady,
         isAddTxModalOpen,
