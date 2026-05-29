@@ -1,71 +1,84 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Modal } from '../components/ui/Modal';
-import { useAppContext } from '../context/AppContext';
-import { AlertTriangle, Plus, Target, Wallet, Save, Edit2, Trash2, Car, Utensils, Clapperboard, Zap, PiggyBank, Bot, ArrowRight } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Modal } from "../components/ui/Modal";
+import { useAppContext } from "../context/AppContext";
+import { AlertTriangle, Plus, Target, Wallet, Save, Edit2, Trash2, Car, Utensils, Clapperboard, Zap, PiggyBank, Bot, ArrowRight } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export const BudgetPage = () => {
-  const { budgets, addBudget } = useAppContext();
+  const { budgets, addBudget, getBudgetSuggestions, applyBudgetSuggestion, applyAllBudgetSuggestions, user, categories, customCategories } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newBudget, setNewBudget] = useState({ category: 'transportasi', total: '', color: 'bg-blue-500' });
+  const [newBudget, setNewBudget] = useState({ category: "transportasi", total: "", color: "bg-blue-500" });
 
-  const categories = [
-    "transportasi", "belanja", "makanan", "hiburan", "sosial", 
-    "pendidikan", "travel", "kesehatan dan perawatan diri", "tagihan", "lainnya"
-  ];
+  const budgetCategoryOptions = Array.from(new Set([...categories, ...customCategories].map((category) => category?.name).filter(Boolean)));
+  const fallbackCategories = ["transportasi", "belanja", "makanan", "hiburan", "sosial", "pendidikan", "travel", "kesehatan dan perawatan diri", "tagihan", "lainnya"];
+  const categoriesForSelect = budgetCategoryOptions.length > 0 ? budgetCategoryOptions : fallbackCategories;
 
   const colors = [
-    { name: 'Blue', value: 'bg-blue-500' },
-    { name: 'Purple', value: 'bg-purple-500' },
-    { name: 'Red', value: 'bg-red-500' },
-    { name: 'Yellow', value: 'bg-yellow-500' },
-    { name: 'Green', value: 'bg-green-500' },
-    { name: 'Indigo', value: 'bg-indigo-500' },
-    { name: 'Pink', value: 'bg-pink-500' },
+    { name: "Blue", value: "bg-blue-500" },
+    { name: "Purple", value: "bg-purple-500" },
+    { name: "Red", value: "bg-red-500" },
+    { name: "Yellow", value: "bg-yellow-500" },
+    { name: "Green", value: "bg-green-500" },
+    { name: "Indigo", value: "bg-indigo-500" },
+    { name: "Pink", value: "bg-pink-500" },
   ];
 
-  const handleCreateBudget = (e) => {
+  const handleCreateBudget = async (e) => {
     e.preventDefault();
     if (!newBudget.total) return;
-    
-    addBudget({
-      category: newBudget.category,
-      total: parseFloat(newBudget.total),
-      color: newBudget.color
-    });
-    
-    setIsModalOpen(false);
-    setNewBudget({ category: 'transportasi', total: '', color: 'bg-blue-500' });
+
+    try {
+      await addBudget({
+        category: newBudget.category,
+        total: parseFloat(newBudget.total),
+        color: newBudget.color,
+      });
+
+      setIsModalOpen(false);
+      setNewBudget({ category: "transportasi", total: "", color: "bg-blue-500" });
+    } catch (error) {
+      window.alert(error.message || "Gagal menyimpan anggaran");
+    }
   };
 
   const getCategoryIcon = (category) => {
-    switch(category.toLowerCase()) {
-      case 'makanan': return <Utensils className="w-6 h-6 text-orange-500" />;
-      case 'transportasi': return <Car className="w-6 h-6 text-red-500" />;
-      case 'hiburan': return <Clapperboard className="w-6 h-6 text-slate-700" />;
-      case 'tagihan': return <Zap className="w-6 h-6 text-yellow-500" />;
-      default: return <Target className="w-6 h-6 text-primary-500" />;
+    switch (category.toLowerCase()) {
+      case "makanan":
+        return <Utensils className="w-6 h-6 text-orange-500" />;
+      case "transportasi":
+        return <Car className="w-6 h-6 text-red-500" />;
+      case "hiburan":
+        return <Clapperboard className="w-6 h-6 text-slate-700" />;
+      case "tagihan":
+        return <Zap className="w-6 h-6 text-yellow-500" />;
+      default:
+        return <Target className="w-6 h-6 text-primary-500" />;
     }
   };
 
   const getNeumorphicBg = (category) => {
-    switch(category.toLowerCase()) {
-      case 'makanan': return 'bg-orange-50 shadow-[2px_2px_8px_#ffedd5,-2px_-2px_8px_#ffffff]';
-      case 'transportasi': return 'bg-blue-50 shadow-[2px_2px_8px_#dbeafe,-2px_-2px_8px_#ffffff]';
-      case 'hiburan': return 'bg-purple-50 shadow-[2px_2px_8px_#f3e8ff,-2px_-2px_8px_#ffffff]';
-      case 'tagihan': return 'bg-yellow-50 shadow-[2px_2px_8px_#fef9c3,-2px_-2px_8px_#ffffff]';
-      default: return 'bg-slate-50 shadow-[2px_2px_8px_#f1f5f9,-2px_-2px_8px_#ffffff]';
+    switch (category.toLowerCase()) {
+      case "makanan":
+        return "bg-orange-50 shadow-[2px_2px_8px_#ffedd5,-2px_-2px_8px_#ffffff]";
+      case "transportasi":
+        return "bg-blue-50 shadow-[2px_2px_8px_#dbeafe,-2px_-2px_8px_#ffffff]";
+      case "hiburan":
+        return "bg-purple-50 shadow-[2px_2px_8px_#f3e8ff,-2px_-2px_8px_#ffffff]";
+      case "tagihan":
+        return "bg-yellow-50 shadow-[2px_2px_8px_#fef9c3,-2px_-2px_8px_#ffffff]";
+      default:
+        return "bg-slate-50 shadow-[2px_2px_8px_#f1f5f9,-2px_-2px_8px_#ffffff]";
     }
   };
 
   const formatRp = (amount) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -73,7 +86,10 @@ export const BudgetPage = () => {
   const totalBudget = budgets.reduce((acc, curr) => acc + curr.total, 0);
   const totalSpent = budgets.reduce((acc, curr) => acc + curr.spent, 0);
   const totalRemaining = totalBudget - totalSpent;
-  const overallPercentage = (totalSpent / totalBudget) * 100;
+  const isBudgetAlert = totalRemaining < 0;
+  const overallPercentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const potentialSavings = Math.max(0, Number(user.monthlyIncome || 0) - Number(user.monthlyExpenses || 0) - totalSpent);
+  const aiSavings = Math.max(0, Math.round(totalSpent * 0.1));
 
   return (
     <div className="space-y-6">
@@ -82,23 +98,51 @@ export const BudgetPage = () => {
           <h1 className="text-2xl font-bold text-slate-900">Ringkasan Anggaran</h1>
           <p className="text-slate-500">Pantau batas pengeluaran dan tujuan Anda.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center gap-2">
           <Plus className="w-4 h-4" />
           Buat Anggaran
         </Button>
       </div>
+      {/* Suggested Budgets */}
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Saran Anggaran Berdasarkan Pemasukan</h2>
+            <p className="text-sm text-slate-500">Kami merekomendasikan alokasi anggaran berdasarkan pemasukan bulanan Anda.</p>
+          </div>
+          <div className="w-full sm:w-auto flex items-center gap-2">
+            <Button onClick={() => applyAllBudgetSuggestions(user.monthlyIncome)} className="text-sm w-full sm:w-auto">
+              Terapkan Semua
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {getBudgetSuggestions(user.monthlyIncome).map((s) => (
+            <div key={s.category} className="p-4 bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium capitalize">{s.category}</div>
+                <div className="text-xs text-slate-500">Saran: Rp {s.amount.toLocaleString("id-ID")}</div>
+              </div>
+              <div className="w-full sm:w-auto">
+                <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => applyBudgetSuggestion(s.category, s.amount)}>
+                  Terapkan
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Buat Anggaran Baru">
         <form onSubmit={handleCreateBudget} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
-            <select
-              value={newBudget.category}
-              onChange={(e) => setNewBudget({...newBudget, category: e.target.value})}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none capitalize"
-            >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+            <select value={newBudget.category} onChange={(e) => setNewBudget({ ...newBudget, category: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none capitalize">
+              {categoriesForSelect.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
           </div>
@@ -106,27 +150,14 @@ export const BudgetPage = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Batas Bulanan</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">Rp</span>
-              <input
-                type="number"
-                required
-                min="1"
-                value={newBudget.total}
-                onChange={(e) => setNewBudget({...newBudget, total: e.target.value})}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                placeholder="0"
-              />
+              <input type="number" required min="1" value={newBudget.total} onChange={(e) => setNewBudget({ ...newBudget, total: e.target.value })} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" placeholder="0" />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Label Warna</label>
-            <div className="flex gap-2">
-              {colors.map(c => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setNewBudget({...newBudget, color: c.value})}
-                  className={`w-8 h-8 rounded-full ${c.value} ${newBudget.color === c.value ? 'ring-2 ring-offset-2 ring-slate-400' : ''}`}
-                />
+            <div className="flex gap-2 flex-wrap">
+              {colors.map((c) => (
+                <button key={c.value} type="button" onClick={() => setNewBudget({ ...newBudget, color: c.value })} className={`w-8 h-8 rounded-full ${c.value} ${newBudget.color === c.value ? "ring-2 ring-offset-2 ring-slate-400" : ""}`} />
               ))}
             </div>
           </div>
@@ -157,10 +188,7 @@ export const BudgetPage = () => {
             </div>
             <p className="text-3xl font-bold text-slate-900">{formatRp(totalSpent)}</p>
             <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5">
-              <div 
-                className="bg-primary-500 h-1.5 rounded-full" 
-                style={{ width: `${Math.min(overallPercentage, 100)}%` }}
-              ></div>
+              <div className="bg-primary-500 h-1.5 rounded-full" style={{ width: `${Math.min(overallPercentage, 100)}%` }}></div>
             </div>
           </Card>
         </motion.div>
@@ -171,14 +199,10 @@ export const BudgetPage = () => {
               <div className="w-5 h-5 rounded-full border-2 border-green-500 flex items-center justify-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               </div>
-              <h3 className="font-medium text-slate-500">Sisa</h3>
+              <h3 className="font-medium text-slate-500">{isBudgetAlert ? "Alert Budget" : "Sisa"}</h3>
             </div>
-            <p className={`text-3xl font-bold ${totalRemaining < 0 ? 'text-red-500' : 'text-green-500'}`}>
-              {formatRp(Math.abs(totalRemaining))}
-            </p>
-            <p className="text-sm text-slate-500 mt-2">
-              {totalRemaining < 0 ? 'Melebihi anggaran!' : 'Aman untuk dipakai'}
-            </p>
+            <p className={`text-3xl font-bold ${isBudgetAlert ? "text-red-500" : "text-green-500"}`}>{isBudgetAlert ? `-${formatRp(Math.abs(totalRemaining)).replace(/^Rp\s?/, "Rp ")}` : formatRp(totalRemaining)}</p>
+            <p className="text-sm text-slate-500 mt-2">{isBudgetAlert ? "Saldo anggaran minus, perlu penyesuaian." : "Aman untuk dipakai"}</p>
           </Card>
         </motion.div>
       </div>
@@ -191,15 +215,23 @@ export const BudgetPage = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={budgets.map(b => ({
+                    data={budgets.map((b) => ({
                       name: b.category,
                       value: b.total,
-                      fill: {
-                        'text-orange-500': '#f97316', 'text-blue-500': '#3b82f6', 'text-purple-500': '#a855f7',
-                        'text-yellow-500': '#eab308', 'bg-blue-500': '#3b82f6', 'bg-purple-500': '#a855f7',
-                        'bg-red-500': '#ef4444', 'bg-yellow-500': '#eab308', 'bg-green-500': '#22c55e',
-                        'bg-indigo-500': '#6366f1', 'bg-pink-500': '#ec4899'
-                      }[b.color] || '#94a3b8'
+                      fill:
+                        {
+                          "text-orange-500": "#f97316",
+                          "text-blue-500": "#3b82f6",
+                          "text-purple-500": "#a855f7",
+                          "text-yellow-500": "#eab308",
+                          "bg-blue-500": "#3b82f6",
+                          "bg-purple-500": "#a855f7",
+                          "bg-red-500": "#ef4444",
+                          "bg-yellow-500": "#eab308",
+                          "bg-green-500": "#22c55e",
+                          "bg-indigo-500": "#6366f1",
+                          "bg-pink-500": "#ec4899",
+                        }[b.color] || "#94a3b8",
                     }))}
                     cx="50%"
                     cy="50%"
@@ -210,36 +242,58 @@ export const BudgetPage = () => {
                     stroke="none"
                   >
                     {budgets.map((b, index) => (
-                      <Cell key={`cell-${index}`} fill={{
-                        'text-orange-500': '#f97316', 'text-blue-500': '#3b82f6', 'text-purple-500': '#a855f7',
-                        'text-yellow-500': '#eab308', 'bg-blue-500': '#3b82f6', 'bg-purple-500': '#a855f7',
-                        'bg-red-500': '#ef4444', 'bg-yellow-500': '#eab308', 'bg-green-500': '#22c55e',
-                        'bg-indigo-500': '#6366f1', 'bg-pink-500': '#ec4899'
-                      }[b.color] || '#94a3b8'} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          {
+                            "text-orange-500": "#f97316",
+                            "text-blue-500": "#3b82f6",
+                            "text-purple-500": "#a855f7",
+                            "text-yellow-500": "#eab308",
+                            "bg-blue-500": "#3b82f6",
+                            "bg-purple-500": "#a855f7",
+                            "bg-red-500": "#ef4444",
+                            "bg-yellow-500": "#eab308",
+                            "bg-green-500": "#22c55e",
+                            "bg-indigo-500": "#6366f1",
+                            "bg-pink-500": "#ec4899",
+                          }[b.color] || "#94a3b8"
+                        }
+                      />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    formatter={(value) => formatRp(value)}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  />
-                  <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" />
+                  <Tooltip formatter={(value) => formatRp(value)} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }} />
+                  <Legend verticalAlign="bottom" align="center" layout="horizontal" iconType="circle" />
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <div className="w-full md:w-1/2">
               <h3 className="text-xl font-bold text-slate-900 mb-2">Distribusi Anggaran</h3>
               <p className="text-slate-500 mb-6">Melihat bagaimana dana Anda dialokasikan ke berbagai kategori untuk bulan ini.</p>
-              
+
               <div className="space-y-4">
-                {budgets.slice(0, 4).map(b => (
+                {budgets.slice(0, 4).map((b) => (
                   <div key={b.id} className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: {
-                        'text-orange-500': '#f97316', 'text-blue-500': '#3b82f6', 'text-purple-500': '#a855f7',
-                        'text-yellow-500': '#eab308', 'bg-blue-500': '#3b82f6', 'bg-purple-500': '#a855f7',
-                        'bg-red-500': '#ef4444', 'bg-yellow-500': '#eab308', 'bg-green-500': '#22c55e',
-                        'bg-indigo-500': '#6366f1', 'bg-pink-500': '#ec4899'
-                      }[b.color] || '#94a3b8' }}></div>
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{
+                          backgroundColor:
+                            {
+                              "text-orange-500": "#f97316",
+                              "text-blue-500": "#3b82f6",
+                              "text-purple-500": "#a855f7",
+                              "text-yellow-500": "#eab308",
+                              "bg-blue-500": "#3b82f6",
+                              "bg-purple-500": "#a855f7",
+                              "bg-red-500": "#ef4444",
+                              "bg-yellow-500": "#eab308",
+                              "bg-green-500": "#22c55e",
+                              "bg-indigo-500": "#6366f1",
+                              "bg-pink-500": "#ec4899",
+                            }[b.color] || "#94a3b8",
+                        }}
+                      ></div>
                       <span className="font-medium text-slate-700 capitalize">{b.category}</span>
                     </div>
                     <span className="font-bold text-slate-900">{((b.total / totalBudget) * 100).toFixed(0)}%</span>
@@ -254,108 +308,95 @@ export const BudgetPage = () => {
       {/* Category Budgets List */}
       <Card className="p-0 overflow-hidden border-none shadow-sm ring-1 ring-slate-100">
         <div className="flex flex-col divide-y divide-slate-100">
-          {budgets.map((budget, index) => {
-            const percentage = (budget.spent / budget.total) * 100;
-            
-            // Logic Status
-            let statusText = 'Aman';
-            let statusColor = 'bg-green-100 text-green-700 border-green-200';
-            let progressColor = 'bg-green-500';
-            let barColor = '#22c55e'; // green-500
+          {budgets.length === 0 ? (
+            <div className="p-6 text-sm text-slate-500">Belum ada anggaran yang tersinkron dari backend.</div>
+          ) : (
+            budgets.map((budget, index) => {
+              const percentage = budget.total > 0 ? (budget.spent / budget.total) * 100 : 0;
 
-            if (percentage > 90) {
-              statusText = 'Bahaya';
-              statusColor = 'bg-red-100 text-red-700 border-red-200';
-              progressColor = 'bg-red-500';
-              barColor = '#ef4444'; // red-500
-            } else if (percentage >= 70) {
-              statusText = 'Waspada';
-              statusColor = 'bg-yellow-100 text-yellow-700 border-yellow-200';
-              progressColor = 'bg-yellow-500';
-              barColor = '#eab308'; // yellow-500
-            }
+              // Logic Status
+              let statusText = "Aman";
+              let statusColor = "bg-green-100 text-green-700 border-green-200";
+              let progressColor = "bg-green-500";
+              let barColor = "#22c55e"; // green-500
 
-            // Logic Insight (Asumsi hari ke-15)
-            const currentDay = 15;
-            const dailyAvg = budget.spent / currentDay;
-            const remaining = budget.total - budget.spent;
-            const daysLeft = remaining > 0 && dailyAvg > 0 ? Math.floor(remaining / dailyAvg) : 0;
-            let insightText = '';
-            if (percentage >= 100) {
-               insightText = 'Anggaran telah habis.';
-            } else {
-               insightText = `Jika tren tetap, anggaran habis dalam ${daysLeft} hari.`;
-            }
+              if (percentage > 90) {
+                statusText = "Bahaya";
+                statusColor = "bg-red-100 text-red-700 border-red-200";
+                progressColor = "bg-red-500";
+                barColor = "#ef4444"; // red-500
+              } else if (percentage >= 70) {
+                statusText = "Waspada";
+                statusColor = "bg-yellow-100 text-yellow-700 border-yellow-200";
+                progressColor = "bg-yellow-500";
+                barColor = "#eab308"; // yellow-500
+              }
 
-            // Generate mock trend for the sparkline (removed per user request)
+              // Logic Insight (Asumsi hari ke-15)
+              const currentDay = 15;
+              const dailyAvg = budget.spent / currentDay;
+              const remaining = budget.total - budget.spent;
+              const daysLeft = remaining > 0 && dailyAvg > 0 ? Math.floor(remaining / dailyAvg) : 0;
+              let insightText = "";
+              if (percentage >= 100) {
+                insightText = "Anggaran telah habis.";
+              } else {
+                insightText = `Jika tren tetap, anggaran habis dalam ${daysLeft} hari.`;
+              }
 
-            return (
-              <motion.div 
-                key={budget.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + (index * 0.1) }}
-                className="p-6 hover:bg-slate-50/50 transition-colors"
-              >
-                <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-                  
-                  {/* Left: Icon, Title & Status */}
-                  <div className="flex items-start gap-4 lg:w-[40%]">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${getNeumorphicBg(budget.category)}`}>
-                      {getCategoryIcon(budget.category)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-slate-900 text-lg capitalize">{budget.category}</h3>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColor}`}>
-                          {statusText}
-                        </span>
+              // Generate mock trend for the sparkline (removed per user request)
+
+              return (
+                <motion.div key={budget.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + index * 0.1 }} className="p-4 sm:p-6 hover:bg-slate-50/50 transition-colors">
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                    {/* Left: Icon, Title & Status */}
+                    <div className="flex items-start gap-4 lg:w-[40%]">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${getNeumorphicBg(budget.category)}`}>{getCategoryIcon(budget.category)}</div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-slate-900 text-lg capitalize">{budget.category}</h3>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColor}`}>{statusText}</span>
+                        </div>
+                        <p className="text-sm text-slate-500 mb-2">{budget.subtitle || "Kategori Pengeluaran"}</p>
+                        <p className="text-xs font-medium text-slate-400">
+                          Batas: <span className="text-slate-700">{formatRp(budget.total)}</span>
+                        </p>
                       </div>
-                      <p className="text-sm text-slate-500 mb-2">{budget.subtitle || 'Kategori Pengeluaran'}</p>
-                      <p className="text-xs font-medium text-slate-400">Batas: <span className="text-slate-700">{formatRp(budget.total)}</span></p>
+                    </div>
+
+                    {/* Middle: Progress & Insight */}
+                    <div className="lg:w-[45%] flex flex-col justify-center mt-2 lg:mt-0">
+                      <div className="flex justify-between items-end mb-2">
+                        <span className={`text-sm font-bold ${progressColor.replace("bg-", "text-")}`}>Terpakai {percentage.toFixed(0)}%</span>
+                        <span className="text-sm font-medium text-slate-700">{formatRp(budget.spent)}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-2">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(percentage, 100)}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full rounded-full ${progressColor}`} />
+                      </div>
+                      <p className="text-xs text-slate-500 italic flex items-start gap-1">
+                        <span>💡</span> <span>{insightText}</span>
+                      </p>
+                    </div>
+
+                    {/* Actions & Detail */}
+                    <div className="lg:w-[15%] flex flex-col sm:flex-row lg:flex-col justify-between sm:items-center lg:items-end gap-3 shrink-0 lg:border-l lg:border-slate-100 lg:pl-4 mt-4 lg:mt-0">
+                      <div className="flex gap-1 w-full sm:w-auto justify-end">
+                        <button className="p-2 text-slate-400 hover:text-primary-600 transition-colors rounded-lg hover:bg-primary-50">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-xs w-full sm:w-auto whitespace-nowrap">
+                        Lihat Detail
+                      </Button>
                     </div>
                   </div>
-
-                  {/* Middle: Progress & Insight */}
-                  <div className="lg:w-[45%] flex flex-col justify-center mt-2 lg:mt-0">
-                    <div className="flex justify-between items-end mb-2">
-                      <span className={`text-sm font-bold ${progressColor.replace('bg-', 'text-')}`}>
-                        Terpakai {percentage.toFixed(0)}%
-                      </span>
-                      <span className="text-sm font-medium text-slate-700">{formatRp(budget.spent)}</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-2">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(percentage, 100)}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className={`h-full rounded-full ${progressColor}`}
-                      />
-                    </div>
-                    <p className="text-xs text-slate-500 italic flex items-start gap-1">
-                      <span>💡</span> <span>{insightText}</span>
-                    </p>
-                  </div>
-
-                  {/* Actions & Detail */}
-                  <div className="lg:w-[15%] flex flex-row lg:flex-col justify-between items-end lg:items-end gap-3 shrink-0 lg:border-l lg:border-slate-100 lg:pl-4 mt-4 lg:mt-0">
-                    <div className="flex gap-1 w-full lg:w-auto justify-end">
-                      <button className="p-2 text-slate-400 hover:text-primary-600 transition-colors rounded-lg hover:bg-primary-50">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <Button variant="outline" size="sm" className="text-xs w-full whitespace-nowrap">
-                      Lihat Detail
-                    </Button>
-                  </div>
-
-                </div>
-              </motion.div>
-            );
-          })}
+                </motion.div>
+              );
+            })
+          )}
         </div>
       </Card>
 
@@ -370,10 +411,8 @@ export const BudgetPage = () => {
               </div>
               <span className="font-medium text-slate-700">Potensi Tabungan</span>
             </div>
-            <p className="text-3xl font-bold text-slate-900 mb-2">{formatRp(4250000)}</p>
-            <p className="text-sm font-medium text-green-500 flex items-center gap-1">
-              ↑ 12% dari bulan lalu
-            </p>
+            <p className="text-3xl font-bold text-slate-900 mb-2">{formatRp(potentialSavings)}</p>
+            <p className="text-sm font-medium text-green-500 flex items-center gap-1">Berdasarkan income, expense, dan anggaran tersimpan</p>
           </Card>
         </motion.div>
 
@@ -386,7 +425,13 @@ export const BudgetPage = () => {
             <div className="relative z-10">
               <h3 className="text-slate-600 font-medium mb-3">Insight Finsight AI</h3>
               <p className="text-slate-800 leading-relaxed mb-4">
-                Kamu bisa menghemat sekitar <span className="text-primary-600 font-bold">{formatRp(500000)}</span> jika membatasi makan di luar minggu ini. Mau kami buatkan rencana makan hemat?
+                {aiSavings > 0 ? (
+                  <>
+                    Kamu bisa menghemat sekitar <span className="text-primary-600 font-bold">{formatRp(aiSavings)}</span> jika membatasi makan di luar minggu ini. Mau kami buatkan rencana makan hemat?
+                  </>
+                ) : (
+                  <>Tambahkan transaksi pengeluaran dan anggaran yang lebih lengkap supaya rekomendasi hemat dari AI muncul lebih akurat.</>
+                )}
               </p>
               <button className="text-primary-600 font-semibold text-sm hover:text-primary-700 flex items-center gap-1 group">
                 Lihat Analisis AI
