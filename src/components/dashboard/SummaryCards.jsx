@@ -72,19 +72,19 @@ export const SummaryCards = () => {
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
       {cards.map((card, index) => (
         <motion.div key={index} variants={item}>
-          <Card className="hover:shadow-float transition-all duration-300">
-            <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-2xl ${card.bgColor} ${card.color}`}>
-                <card.icon className="w-6 h-6" />
+          <Card className="h-full hover:shadow-float transition-all duration-300 p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start mb-3 sm:mb-4">
+              <div className={`p-2.5 sm:p-3 rounded-2xl ${card.bgColor} ${card.color} w-fit`}>
+                <card.icon className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${card.isPositive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{card.change}</span>
+              <span className={`text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full w-fit ${card.isPositive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{card.change}</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500 mb-1">{card.title}</p>
-              <h3 className="text-2xl font-bold text-slate-900">{card.isCurrency !== false ? formatCurrency(card.amount) : card.amount}</h3>
+              <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1 leading-tight">{card.title}</p>
+              <h3 className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight break-words">{card.isCurrency !== false ? formatCurrency(card.amount) : card.amount}</h3>
             </div>
           </Card>
         </motion.div>
