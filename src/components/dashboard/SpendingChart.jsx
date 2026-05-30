@@ -1,10 +1,16 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Card } from "../ui/Card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
 import { useAppContext } from "../../context/AppContext";
 
 const weekdayLabels = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+const rangeOptions = [
+  { value: "7d", label: "7 hari terakhir", description: "Pengeluaran Anda dalam 7 hari terakhir" },
+  { value: "month", label: "Bulan ini", description: "Pengeluaran Anda selama bulan ini" },
+  { value: "year", label: "Tahun ini", description: "Pengeluaran Anda selama tahun ini" },
+  { value: "all", label: "Semua waktu", description: "Pengeluaran Anda dari seluruh riwayat transaksi" },
+];
 
 const formatLocalDateKey = (date) => {
   const year = date.getFullYear();
@@ -13,13 +19,25 @@ const formatLocalDateKey = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+const getTransactionDateKey = (transactionDate) => {
+  if (!transactionDate) return "";
+
+  const rawDate = typeof transactionDate === "string" ? transactionDate : new Date(transactionDate).toISOString();
+  return rawDate.slice(0, 10);
+};
+
+const parseLocalDate = (dateKey) => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
+};
+
 const buildWeeklyData = (transactions) => {
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(today);
     date.setDate(today.getDate() - (6 - index));
     const dayKey = formatLocalDateKey(date);
-    const spent = transactions.filter((transaction) => transaction.type === "expense" && transaction.date === dayKey).reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    const spent = transactions.filter((transaction) => transaction.type === "expense" && getTransactionDateKey(transaction.date) === dayKey).reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
 
     return {
       name: weekdayLabels[date.getDay()],
@@ -30,9 +48,82 @@ const buildWeeklyData = (transactions) => {
   return days;
 };
 
+const buildMonthlyData = (transactions) => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  return Array.from({ length: daysInMonth }, (_, index) => {
+    const day = index + 1;
+    const dayKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const spent = transactions.filter((transaction) => transaction.type === "expense" && getTransactionDateKey(transaction.date) === dayKey).reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+
+    return {
+      name: String(day),
+      spent,
+    };
+  });
+};
+
+const buildYearlyData = (transactions) => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+  return Array.from({ length: 12 }, (_, index) => {
+    const spent = transactions
+      .filter((transaction) => {
+        if (transaction.type !== "expense") return false;
+
+        const transactionDate = parseLocalDate(getTransactionDateKey(transaction.date));
+        return transactionDate.getFullYear() === year && transactionDate.getMonth() === index;
+      })
+      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+
+    return {
+      name: monthNames[index],
+      spent,
+    };
+  });
+};
+
+const buildAllTimeData = (transactions) => {
+  const grouped = new Map();
+
+  transactions.forEach((transaction) => {
+    if (transaction.type !== "expense") return;
+
+    const transactionDate = parseLocalDate(getTransactionDateKey(transaction.date));
+    const key = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, "0")}`;
+    const label = transactionDate.toLocaleDateString("id-ID", { month: "short", year: "2-digit" });
+    const current = grouped.get(key) || { name: label, spent: 0 };
+    current.spent += Math.abs(transaction.amount);
+    grouped.set(key, current);
+  });
+
+  return [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, value]) => value);
+};
+
 export const SpendingChart = () => {
   const { transactions } = useAppContext();
-  const chartData = buildWeeklyData(transactions);
+  const [selectedRange, setSelectedRange] = useState("7d");
+
+  const chartData = useMemo(() => {
+    switch (selectedRange) {
+      case "month":
+        return buildMonthlyData(transactions);
+      case "year":
+        return buildYearlyData(transactions);
+      case "all":
+        return buildAllTimeData(transactions);
+      case "7d":
+      default:
+        return buildWeeklyData(transactions);
+    }
+  }, [selectedRange, transactions]);
+
+  const activeOption = rangeOptions.find((option) => option.value === selectedRange) || rangeOptions[0];
   const hasChartData = chartData.some((item) => item.spent > 0);
 
   return (
@@ -41,12 +132,14 @@ export const SpendingChart = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h3 className="text-lg font-bold text-slate-900">Ringkasan Pengeluaran</h3>
-            <p className="text-sm text-slate-500">Pengeluaran Anda dalam 7 hari terakhir</p>
+            <p className="text-sm text-slate-500">{activeOption.description}</p>
           </div>
-          <select className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2">
-            <option>7 hari terakhir</option>
-            <option>Bulan Ini</option>
-            <option>Tahun Ini</option>
+          <select value={selectedRange} onChange={(e) => setSelectedRange(e.target.value)} className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2">
+            {rangeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -70,7 +163,7 @@ export const SpendingChart = () => {
           ) : (
             <div className="h-[300px] rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 flex items-center justify-center text-center px-6">
               <div>
-                <p className="text-base font-semibold text-slate-900">Belum ada data pengeluaran 7 hari terakhir.</p>
+                <p className="text-base font-semibold text-slate-900">Belum ada data pengeluaran untuk {activeOption.label.toLowerCase()}.</p>
                 <p className="text-sm text-slate-500 mt-2">Tambahkan transaksi expense agar grafik muncul otomatis.</p>
               </div>
             </div>

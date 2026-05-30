@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -13,20 +13,13 @@ const iconMap = {
 };
 
 export const InvestmentPage = () => {
-  const { investments, user, updateProfile } = useAppContext();
+  const { investments, user } = useAppContext();
   const [selectedEdu, setSelectedEdu] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [portfolioDraft, setPortfolioDraft] = useState("");
-  const [isSavingPortfolio, setIsSavingPortfolio] = useState(false);
 
   const investmentProducts = investments?.products || [];
   const educationContent = investments?.education || [];
   const portfolioValue = Number(investments?.portfolio?.value ?? user?.investment_portfolio_value ?? 0);
-  const hasPortfolio = portfolioValue > 0;
-
-  useEffect(() => {
-    setPortfolioDraft(hasPortfolio ? String(portfolioValue) : "");
-  }, [hasPortfolio, portfolioValue]);
 
   const formatCurrency = (value) =>
     new Intl.NumberFormat("id-ID", {
@@ -34,25 +27,6 @@ export const InvestmentPage = () => {
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(value);
-
-  const handlePortfolioSave = async (event) => {
-    event.preventDefault();
-
-    const parsedValue = Number(portfolioDraft);
-    if (Number.isNaN(parsedValue) || parsedValue < 0) {
-      window.alert("Masukkan nilai portofolio yang valid.");
-      return;
-    }
-
-    try {
-      setIsSavingPortfolio(true);
-      await updateProfile({ investment_portfolio_value: parsedValue });
-    } catch (error) {
-      window.alert(error.message || "Gagal menyimpan portofolio investasi");
-    } finally {
-      setIsSavingPortfolio(false);
-    }
-  };
 
   return (
     <div className="space-y-6 md:space-y-8 max-w-5xl mx-auto">
@@ -74,30 +48,16 @@ export const InvestmentPage = () => {
 
         {/* Total Investment Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="p-8 h-full flex flex-col items-center justify-center text-center">
+          <Card className="p-6 sm:p-8 h-full flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-6">
               <Building className="w-8 h-8 text-green-500" />
             </div>
             <p className="text-slate-500 text-sm font-medium mb-1">Total Investasi</p>
-            {hasPortfolio ? (
-              <>
-                <h3 className="text-3xl font-bold text-slate-900 mb-2">{formatCurrency(portfolioValue)}</h3>
-                <p className="text-sm font-semibold text-green-500 flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4" /> Tersimpan di profil kamu
-                </p>
-              </>
-            ) : (
-              <form className="w-full space-y-3" onSubmit={handlePortfolioSave}>
-                <div className="text-left">
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Masukkan total portofolio</label>
-                  <input type="number" min="0" value={portfolioDraft} onChange={(e) => setPortfolioDraft(e.target.value)} placeholder="0" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" />
-                </div>
-                <Button type="submit" fullWidth className="bg-blue-600 hover:bg-blue-700" disabled={isSavingPortfolio}>
-                  {isSavingPortfolio ? "Menyimpan..." : "Simpan Portofolio"}
-                </Button>
-                <p className="text-xs text-slate-500">Masukkan nilai portofolio aktual yang ingin kamu pantau.</p>
-              </form>
-            )}
+            <h3 className="text-3xl font-bold text-slate-900 mb-2">{formatCurrency(portfolioValue)}</h3>
+            <p className="text-sm font-semibold text-green-500 flex items-center gap-1 text-center justify-center">
+              <TrendingUp className="w-4 h-4" /> Portofolio yang sedang kamu bangun
+            </p>
+            <p className="text-xs text-slate-500 mt-3 max-w-xs">Pantau pertumbuhan asetmu dari satu angka total yang selalu terbarui.</p>
           </Card>
         </motion.div>
       </div>
