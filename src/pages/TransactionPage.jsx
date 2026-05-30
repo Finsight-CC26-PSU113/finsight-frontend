@@ -4,10 +4,10 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { useAppContext } from "../context/AppContext";
-import { Search, Plus, Trash2, ArrowUpRight, ArrowDownRight, SlidersHorizontal, Calendar, Sparkles, Check, Loader2 } from "lucide-react";
+import { Search, Plus, Trash2, ArrowUpRight, ArrowDownRight, SlidersHorizontal, Calendar, Sparkles, Check, Loader2, AlertCircle } from "lucide-react";
 import { UploadCloud, Edit3 } from "lucide-react";
 import { getApiBaseUrl } from "../utils/apiClient";
-import { RECEIPT_IMAGE_ACCEPT, buildTransactionFromScan, formatDateHeader, getCategoryStyles, getLatestTxMonthAndYear, getPaymentMethod, getTime, getUniqueMonths, isAllowedReceiptImageFile } from "../utils/transactionPage";
+import { RECEIPT_IMAGE_ACCEPT, buildTransactionFromScan, formatDateHeader, getCategoryStyles, getLatestTxMonthAndYear, getPaymentMethod, getTime, getUniqueMonths, isAllowedReceiptImageFile, preprocessReceiptImage } from "../utils/transactionPage";
 
 export const TransactionPage = () => {
   const { transactions, deleteTransaction, openAddTxModal, openEditTxModal, globalSearchTerm, setGlobalSearchTerm, addTransaction } = useAppContext();
@@ -18,11 +18,29 @@ export const TransactionPage = () => {
   const [sortBy, setSortBy] = useState("date-desc");
   const [selectedMonth, setSelectedMonth] = useState("all");
   const [isScanningReceipt, setIsScanningReceipt] = useState(false);
+  const [scanStatus, setScanStatus] = useState({ state: "idle", message: "" });
   const scanInputRef = useRef(null);
+  const scanStatusTimerRef = useRef(null);
 
   const [txToDelete, setTxToDelete] = useState(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
+  const showScanStatus = (state, message, duration = 0) => {
+    if (scanStatusTimerRef.current) {
+      window.clearTimeout(scanStatusTimerRef.current);
+      scanStatusTimerRef.current = null;
+    }
+
+    setScanStatus({ state, message });
+
+    if (duration > 0) {
+      scanStatusTimerRef.current = window.setTimeout(() => {
+        setScanStatus((current) => (current.state === state ? { state: "idle", message: "" } : current));
+        scanStatusTimerRef.current = null;
+      }, duration);
+    }
+  };
 
   const handleConfirmDelete = () => {
     if (txToDelete) {
@@ -42,18 +60,20 @@ export const TransactionPage = () => {
     if (!file) return;
 
     if (!isAllowedReceiptImageFile(file)) {
-      alert("Pilih file PNG, JPG, atau JPEG.");
+      showScanStatus("error", "Hanya file PNG, JPG, atau JPEG yang bisa diproses.", 2400);
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      alert("Ukuran file maksimal 10MB.");
+    if (file.size > 20 * 1024 * 1024) {
+      showScanStatus("error", "Ukuran gambar terlalu besar. Coba file yang lebih kecil.", 2600);
       return;
     }
 
     try {
       setIsScanningReceipt(true);
+      showScanStatus("loading", "Memproses struk...");
       const formData = new FormData();
-      formData.append("image", file);
+      const uploadFile = await preprocessReceiptImage(file);
+      formData.append("image", uploadFile);
 
       const res = await fetch(`${getApiBaseUrl()}/api/scan`, {
         method: "POST",
@@ -63,19 +83,31 @@ export const TransactionPage = () => {
 
       const payload = await res.json().catch(() => null);
       if (!res.ok) {
-        alert(payload?.message || payload?.detail || "Gagal memproses struk");
+        const errorMessage = payload?.message || payload?.detail || "Gambar tidak dapat diproses saat ini.";
+        showScanStatus("error", errorMessage === "Validation failed" ? "Data struk belum lengkap. Coba upload ulang." : errorMessage, 2800);
         return;
       }
 
       const scan = payload?.data?.scan || payload?.scan || payload;
+      const transactionFromScan = buildTransactionFromScan(scan);
 
-      await addTransaction(buildTransactionFromScan(scan));
+      if (!transactionFromScan) {
+        showScanStatus("error", "Total struk belum terbaca. Coba upload ulang.", 2800);
+        return;
+      }
 
-      alert("Struk berhasil dipindai dan disimpan sebagai transaksi.");
+      try {
+        await addTransaction(transactionFromScan);
+        showScanStatus("success", "Struk berhasil diproses dan disimpan.", 2200);
+      } catch (saveError) {
+        const saveMessage = `${saveError?.message || ""}`;
+        const normalizedMessage = saveMessage.includes("Validation failed") ? "Data transaksi belum lengkap. Coba upload ulang." : "Struk belum bisa disimpan. Coba upload ulang.";
+        showScanStatus("error", normalizedMessage, 2800);
+      }
     } catch (err) {
       console.error("Scan upload failed", err);
 
-      alert(err.message || "Gagal mengunggah struk");
+      showScanStatus("error", "Gambar tidak dapat diproses saat ini.", 2800);
     } finally {
       setIsScanningReceipt(false);
       e.target.value = "";
@@ -141,14 +173,16 @@ export const TransactionPage = () => {
   return (
     <div className="space-y-6">
       <AnimatePresence>
-        {isScanningReceipt && (
+        {scanStatus.state !== "idle" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm px-4">
-            <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }} className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-600">
-                <Loader2 className="h-7 w-7 animate-spin" />
+            <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }} className={`w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl border ${scanStatus.state === "success" ? "border-emerald-200" : scanStatus.state === "error" ? "border-rose-200" : "border-slate-100"}`}>
+              <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${scanStatus.state === "success" ? "bg-emerald-50 text-emerald-600" : scanStatus.state === "error" ? "bg-rose-50 text-rose-600" : "bg-primary-50 text-primary-600"}`}>
+                {scanStatus.state === "loading" && <Loader2 className="h-7 w-7 animate-spin" />}
+                {scanStatus.state === "success" && <Check className="h-7 w-7" />}
+                {scanStatus.state === "error" && <AlertCircle className="h-7 w-7" />}
               </div>
-              <h3 className="text-lg font-bold text-slate-900">Memproses struk</h3>
-              <p className="mt-2 text-sm text-slate-500">Tunggu sebentar sampai OCR dan ML selesai membaca gambar.</p>
+              <h3 className={`text-lg font-bold ${scanStatus.state === "success" ? "text-emerald-700" : scanStatus.state === "error" ? "text-rose-700" : "text-slate-900"}`}>{scanStatus.state === "loading" ? "Memproses struk" : scanStatus.state === "success" ? "Berhasil diproses" : "Gagal diproses"}</h3>
+              <p className="mt-2 text-sm text-slate-500">{scanStatus.message}</p>
             </motion.div>
           </motion.div>
         )}
