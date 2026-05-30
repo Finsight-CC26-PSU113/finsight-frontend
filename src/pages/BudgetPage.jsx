@@ -103,37 +103,6 @@ export const BudgetPage = () => {
           Buat Anggaran
         </Button>
       </div>
-      {/* Suggested Budgets */}
-      <Card>
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Saran Anggaran Berdasarkan Pemasukan</h2>
-            <p className="text-sm text-slate-500">Kami merekomendasikan alokasi anggaran berdasarkan pemasukan bulanan Anda.</p>
-          </div>
-          <div className="w-full sm:w-auto flex items-center gap-2">
-            <Button onClick={() => applyAllBudgetSuggestions(user.monthlyIncome)} className="text-sm w-full sm:w-auto">
-              Terapkan Semua
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {getBudgetSuggestions(user.monthlyIncome).map((s) => (
-            <div key={s.category} className="p-4 bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-medium capitalize">{s.category}</div>
-                <div className="text-xs text-slate-500">Saran: Rp {s.amount.toLocaleString("id-ID")}</div>
-              </div>
-              <div className="w-full sm:w-auto">
-                <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => applyBudgetSuggestion(s.category, s.amount)}>
-                  Terapkan
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Buat Anggaran Baru">
         <form onSubmit={handleCreateBudget} className="space-y-4">
           <div>
@@ -397,6 +366,37 @@ export const BudgetPage = () => {
               );
             })
           )}
+        </div>
+      </Card>
+
+      {/* Suggested Budgets */}
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Saran Anggaran Berdasarkan Pemasukan</h2>
+            <p className="text-sm text-slate-500">Kami merekomendasikan alokasi anggaran berdasarkan pemasukan bulanan Anda.</p>
+          </div>
+          <div className="w-full sm:w-auto flex items-center gap-2">
+            <Button onClick={() => applyAllBudgetSuggestions(user.monthlyIncome)} className="text-sm w-full sm:w-auto">
+              Terapkan Semua
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {getBudgetSuggestions(user.monthlyIncome).map((s) => (
+            <div key={s.category} className="p-4 bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium capitalize">{s.category}</div>
+                <div className="text-xs text-slate-500">Saran: Rp {s.amount.toLocaleString("id-ID")}</div>
+              </div>
+              <div className="w-full sm:w-auto">
+                <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => applyBudgetSuggestion(s.category, s.amount)}>
+                  Terapkan
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
 
