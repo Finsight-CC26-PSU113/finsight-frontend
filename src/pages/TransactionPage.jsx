@@ -146,7 +146,10 @@ export const TransactionPage = () => {
   const filteredTransactions = transactions
     .filter((tx) => {
       const matchesSearch = tx.title.toLowerCase().includes(globalSearchTerm.toLowerCase()) || tx.category.toLowerCase().includes(globalSearchTerm.toLowerCase());
-      const matchesFilter = filter === "all" || tx.type === filter;
+      const matchesFilter =
+        filter === "all" ||
+        tx.type === filter ||
+        (filter === "savings" && (tx.type === "savings_deposit" || tx.type === "savings_withdraw"));
       const matchesCategory =
         selectedCategory === "all" || normalizeCategoryName(tx.category) === normalizeCategoryName(selectedCategory);
 
@@ -268,6 +271,9 @@ export const TransactionPage = () => {
                 <button onClick={() => setFilter("expense")} className={`px-4 md:px-5 py-2 text-xs md:text-sm font-semibold rounded-full transition-all cursor-pointer ${filter === "expense" ? "bg-primary-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50/50"}`}>
                   Pengeluaran
                 </button>
+                <button onClick={() => setFilter("savings")} className={`px-4 md:px-5 py-2 text-xs md:text-sm font-semibold rounded-full transition-all cursor-pointer ${filter === "savings" ? "bg-primary-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50/50"}`}>
+                  Tabungan
+                </button>
               </div>
             </div>
 
@@ -329,7 +335,8 @@ export const TransactionPage = () => {
                   {txs.map((tx, index) => {
                     const catStyles = getCategoryStyles(tx.category);
                     const CatIcon = catStyles.icon;
-                    const isIncome = tx.type === "income";
+                    const isIncome = tx.type === "income" || tx.type === "savings_withdraw";
+                    const isSavingsTx = tx.type === "savings_deposit" || tx.type === "savings_withdraw";
 
                     return (
                       <motion.div key={tx.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }} className="bg-white border border-slate-100 hover:border-slate-200 rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.015)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.035)] transition-all flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:justify-between group cursor-pointer">
@@ -354,6 +361,7 @@ export const TransactionPage = () => {
                             <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${catStyles.bg} mt-1 capitalize`}>{catStyles.label}</span>
                           </div>
                           <div className="flex items-center gap-2">
+                            {!isSavingsTx && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -365,6 +373,7 @@ export const TransactionPage = () => {
                             >
                               <Edit3 className="w-4 h-4" />
                             </button>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

@@ -14,6 +14,7 @@ import { InvestmentPage } from "./pages/InvestmentPage";
 import { InvestmentsCatalogPage } from "./pages/InvestmentsCatalogPage";
 import { InvestmentPortfolioPage } from "./pages/InvestmentPortfolioPage";
 import { InvestmentProductDetailPage } from "./pages/InvestmentProductDetailPage";
+import { SavingsPage } from "./pages/SavingsPage";
 import { useAppContext } from "./context/AppContext";
 
 // Protected Route wrapper
@@ -48,6 +49,7 @@ function App() {
           <Route index element={<DashboardPage />} />
           <Route path="transactions" element={<TransactionPage />} />
           <Route path="budget" element={<BudgetPage />} />
+          <Route path="savings" element={<SavingsPage />} />
           <Route path="insights" element={<InsightsPage />} />
           <Route path="investments" element={<InvestmentPage />} />
           <Route path="investments/portfolio" element={<InvestmentPortfolioPage />} />

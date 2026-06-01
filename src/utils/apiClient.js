@@ -67,6 +67,9 @@ export const apiRequest = async (path, { token, headers, ...options } = {}) => {
 
   if (!response.ok) {
     const message = payload?.message || payload?.error || "Request failed";
+    if (Array.isArray(payload?.errors) && payload.errors.length > 0) {
+      throw new Error(payload.errors.join(". "));
+    }
     throw new Error(message);
   }
 

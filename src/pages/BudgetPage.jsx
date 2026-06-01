@@ -138,18 +138,38 @@ export const BudgetPage = () => {
     }).format(amount);
   };
 
+  const currentMonthPrefix = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+
   const suggestionIncome = useMemo(() => {
     const fromDashboard = Number(user.monthlyIncome || 0);
     if (fromDashboard > 0) return fromDashboard;
 
-    const now = new Date();
-    const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     return transactions
-      .filter((t) => t.type === "income" && String(t.date || "").startsWith(monthPrefix))
+      .filter((t) => t.type === "income" && String(t.date || "").startsWith(currentMonthPrefix))
       .reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
-  }, [user.monthlyIncome, transactions]);
+  }, [user.monthlyIncome, transactions, currentMonthPrefix]);
 
-  const budgetSuggestions = useMemo(() => getBudgetSuggestions(suggestionIncome), [getBudgetSuggestions, suggestionIncome]);
+  /** Tabungan bulan ini = total setoran ke tujuan tabungan (savings_deposit) */
+  const tabunganAmount = useMemo(
+    () =>
+      transactions
+        .filter((t) => t.type === "savings_deposit" && String(t.date || "").startsWith(currentMonthPrefix))
+        .reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0),
+    [transactions, currentMonthPrefix]
+  );
+
+  const allocatableIncome = useMemo(
+    () => Math.max(0, suggestionIncome - tabunganAmount),
+    [suggestionIncome, tabunganAmount]
+  );
+
+  const budgetSuggestions = useMemo(
+    () => getBudgetSuggestions(suggestionIncome, tabunganAmount),
+    [getBudgetSuggestions, suggestionIncome, tabunganAmount]
+  );
 
   const existingSuggestionCategories = useMemo(
     () => new Set(budgets.map((budget) => normalizeCategoryName(budget.category))),
@@ -456,8 +476,8 @@ export const BudgetPage = () => {
             </div>
             <div className="w-full sm:w-auto flex items-center gap-2">
               <Button
-                onClick={() => applyAllBudgetSuggestions(suggestionIncome)}
-                disabled={suggestionIncome <= 0}
+                onClick={() => applyAllBudgetSuggestions(suggestionIncome, tabunganAmount)}
+                disabled={allocatableIncome <= 0}
                 className="text-sm w-full sm:w-auto"
               >
                 Terapkan Semua
@@ -470,9 +490,21 @@ export const BudgetPage = () => {
               Belum ada pemasukan bulan ini. Tambahkan transaksi <strong>Pemasukan</strong> dulu agar nominal saran terisi; kartu kategori di bawah menampilkan persentase alokasi.
             </p>
           ) : (
-            <p className="mt-4 text-sm text-slate-600">
-              Berdasarkan pemasukan bulan ini: <span className="font-semibold text-slate-900">{formatRp(suggestionIncome)}</span>
-            </p>
+            <div className="mt-4 text-sm text-slate-600 space-y-1">
+              <p>
+                Rumus: <span className="font-medium text-slate-800">Saran = % kategori × (Pemasukan − Tabungan)</span>
+              </p>
+              <p>
+                Pemasukan: <span className="font-semibold text-slate-900">{formatRp(suggestionIncome)}</span>
+                {" · "}
+                Tabungan: <span className="font-semibold text-slate-900">{formatRp(tabunganAmount)}</span>
+                {" · "}
+                Dasar alokasi: <span className="font-semibold text-primary-700">{formatRp(allocatableIncome)}</span>
+              </p>
+              {tabunganAmount > suggestionIncome && (
+                <p className="text-amber-700 text-xs">Tabungan melebihi pemasukan; saran kategori bernilai Rp 0 hingga pemasukan bertambah.</p>
+              )}
+            </div>
           )}
 
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -481,10 +513,12 @@ export const BudgetPage = () => {
                 <div>
                   <div className="text-sm font-medium">{formatCategoryLabel(s.category)}</div>
                   <div className="text-xs text-slate-500">
-                    {suggestionIncome > 0 ? (
-                      <>Saran: {formatRp(s.amount)}</>
+                    {allocatableIncome > 0 ? (
+                      <>
+                        {Math.round((s.percent || 0) * 100)}% × {formatRp(allocatableIncome)} = {formatRp(s.amount)}
+                      </>
                     ) : (
-                      <>Alokasi: {Math.round((s.percent || 0) * 100)}% dari pemasukan</>
+                      <>Alokasi: {Math.round((s.percent || 0) * 100)}% × (pemasukan − tabungan)</>
                     )}
                   </div>
                 </div>

@@ -71,25 +71,34 @@ const getCategoryIconName = (categoryName, transactionType) => {
   return match ? match[1] : "ShoppingCart";
 };
 
+const isDebitTransactionType = (type) => type === "expense" || type === "savings_deposit";
+
 const mapTransaction = (transaction) => {
-  const categoryName = transaction.category?.name || transaction.user_category?.name || transaction.category_name || "Lainnya";
+  const savingsGoalName = transaction.savings_goal?.name;
+  const isSavings = transaction.transaction_type === "savings_deposit" || transaction.transaction_type === "savings_withdraw";
+  const categoryName = isSavings
+    ? "Tabungan"
+    : transaction.category?.name || transaction.user_category?.name || transaction.category_name || "Lainnya";
   const amount = toNumber(transaction.amount);
-  const signedAmount = transaction.transaction_type === "expense" ? -Math.abs(amount) : Math.abs(amount);
+  const signedAmount = isDebitTransactionType(transaction.transaction_type) ? -Math.abs(amount) : Math.abs(amount);
 
   return {
     id: transaction.id,
-    title: transaction.description || categoryName,
+    title: transaction.description || savingsGoalName || categoryName,
     amount: signedAmount,
     date: formatDateValue(transaction.transaction_date),
     category: categoryName,
     type: transaction.transaction_type,
-    icon: getCategoryIconName(categoryName, transaction.transaction_type),
+    icon: isSavings ? "PiggyBank" : getCategoryIconName(categoryName, transaction.transaction_type),
     paymentMethod: transaction.payment_method,
     is_anomaly: transaction.is_anomaly,
     anomaly_score: transaction.anomaly_score,
     category_id: transaction.category_id,
     user_category_id: transaction.user_category_id,
+    savings_goal_id: transaction.savings_goal_id,
+    savings_goal_name: savingsGoalName,
     rawAmount: amount,
+    isSavings,
   };
 };
 
@@ -128,12 +137,19 @@ const BUDGET_SUGGESTION_PERCENT = {
   lainnya: 0.17,
 };
 
-const getBudgetSuggestions = (income = 0) => {
-  const total = toNumber(income);
+/** Saran = persentase kategori × (total pemasukan − tabungan) */
+const getBudgetSuggestions = (income = 0, tabungan = 0) => {
+  const totalIncome = toNumber(income);
+  const tabunganAmount = Math.max(0, toNumber(tabungan));
+  const allocatable = Math.max(0, totalIncome - tabunganAmount);
+
   return Object.keys(BUDGET_SUGGESTION_PERCENT).map((cat) => ({
     category: cat,
     percent: BUDGET_SUGGESTION_PERCENT[cat],
-    amount: total > 0 ? Math.round(total * BUDGET_SUGGESTION_PERCENT[cat]) : 0,
+    amount: allocatable > 0 ? Math.round(allocatable * BUDGET_SUGGESTION_PERCENT[cat]) : 0,
+    allocatableIncome: allocatable,
+    tabungan: tabunganAmount,
+    totalIncome,
   }));
 };
 
@@ -145,7 +161,13 @@ const mapInsight = (item, fallbackId) => ({
   action: item.action,
 });
 
-const buildInsights = ({ recommendations = [], budgetProgress = [], transactions = [], summary = null }) => {
+const buildInsights = ({
+  recommendations = [],
+  budgetProgress = [],
+  transactions = [],
+  summary = null,
+  savingsInsights = [],
+}) => {
   const recommendationInsights = recommendations.map((recommendation) => ({
     id: recommendation.id,
     type: "recommendation",
@@ -191,7 +213,17 @@ const buildInsights = ({ recommendations = [], budgetProgress = [], transactions
         ]
       : [];
 
-  return [...anomalyInsights, ...budgetInsights, ...recommendationInsights, ...positiveInsight].map((item, index) => mapInsight(item, index + 1));
+  const savingsInsightItems = savingsInsights.map((insight, index) => ({
+    id: `savings-${insight.goal_id || "global"}-${index}`,
+    type: insight.type || "behavior",
+    title: insight.title,
+    description: insight.description,
+    action: insight.action || "Buka Tabungan",
+  }));
+
+  return [...anomalyInsights, ...savingsInsightItems, ...budgetInsights, ...recommendationInsights, ...positiveInsight].map(
+    (item, index) => mapInsight(item, index + 1)
+  );
 };
 
 export const AppProvider = ({ children }) => {
@@ -204,6 +236,10 @@ export const AppProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
   const [investments, setInvestments] = useState(null);
+  const [savingsGoals, setSavingsGoals] = useState([]);
+  const [savingsAvailableBalance, setSavingsAvailableBalance] = useState(null);
+  const [savingsInsights, setSavingsInsights] = useState([]);
+  const [savingsReady, setSavingsReady] = useState(false);
   const [dashboardSummary, setDashboardSummary] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(Boolean(storedSession.token));
   const [isAuthReady, setIsAuthReady] = useState(!storedSession.token);
@@ -232,7 +268,19 @@ export const AppProvider = ({ children }) => {
       const profileResponse = await apiRequest("/api/auth/profile", { token });
       const profile = profileResponse?.data?.user || profileResponse?.data || null;
 
-      const [categoriesResponse, customCategoriesResponse, dashboardResponse, transactionsResponse, budgetsResponse, recommendationsResponse, investmentsResponse] = await Promise.all([apiRequest("/categories", { token }), apiRequest("/categories/custom", { token }), apiRequest("/api/dashboard/summary", { token }), apiRequest("/api/transactions", { token }), apiRequest(`/api/budgets?period=${currentPeriod()}`, { token }), apiRequest("/api/recommendations", { token }), apiRequest("/api/investments", { token })]);
+      const safe = (promise, fallback) => promise.catch(() => fallback);
+
+      const [categoriesResponse, customCategoriesResponse, dashboardResponse, transactionsResponse, budgetsResponse, recommendationsResponse, investmentsResponse, savingsGoalsResponse, savingsInsightsResponse] = await Promise.all([
+        safe(apiRequest("/categories", { token }), { data: { categories: [] } }),
+        safe(apiRequest("/categories/custom", { token }), { data: { categories: [] } }),
+        safe(apiRequest("/api/dashboard/summary", { token }), { data: {} }),
+        safe(apiRequest("/api/transactions", { token }), { data: { transactions: [] } }),
+        safe(apiRequest(`/api/budgets?period=${currentPeriod()}`, { token }), { data: { budgets: [] } }),
+        safe(apiRequest("/api/recommendations", { token }), { data: { recommendations: [] } }),
+        safe(apiRequest("/api/investments", { token }), { data: null }),
+        apiRequest("/api/savings-goals", { token }).catch(() => null),
+        apiRequest("/api/savings-goals/insights", { token }).catch(() => null),
+      ]);
 
       const defaultCategories = categoriesResponse?.data?.categories || [];
       const userDefinedCategories = customCategoriesResponse?.data?.categories || [];
@@ -242,6 +290,10 @@ export const AppProvider = ({ children }) => {
       const rawBudgets = budgetsResponse?.data?.budgets || [];
       const rawRecommendations = recommendationsResponse?.data?.recommendations || [];
       const investmentData = investmentsResponse?.data || null;
+      const savingsGoalsData = savingsGoalsResponse?.data?.goals;
+      const savingsInsightsData = savingsInsightsResponse?.data?.insights;
+      const savingsBalance = savingsGoalsResponse?.data?.available_balance;
+      const resolvedSavingsInsights = Array.isArray(savingsInsightsData) ? savingsInsightsData : [];
 
       const budgetProgressByCategoryId = (dashboardSummary.budget_progress || []).reduce((map, item) => {
         map[item.category_id] = item;
@@ -255,6 +307,7 @@ export const AppProvider = ({ children }) => {
         budgetProgress: dashboardSummary.budget_progress || [],
         transactions: normalizedTransactions,
         summary: dashboardSummary,
+        savingsInsights: resolvedSavingsInsights,
       });
 
       const nextUser = {
@@ -273,38 +326,19 @@ export const AppProvider = ({ children }) => {
       setBudgets(normalizedBudgets);
       setInsights(normalizedInsights);
       setInvestments(investmentData);
+      if (Array.isArray(savingsGoalsData)) {
+        setSavingsGoals(savingsGoalsData);
+        setSavingsAvailableBalance(toNumber(savingsBalance));
+      }
+      if (Array.isArray(savingsInsightsData)) {
+        setSavingsInsights(resolvedSavingsInsights);
+      }
+      // Tandai siap meski API tabungan gagal — hindari flicker empty/loading
+      setSavingsReady(true);
       setDashboardSummary(dashboardSummary);
       setHasUnreadNotifications(normalizedInsights.some((item) => item.type === "alert" || item.type === "recommendation"));
       setIsAuthenticated(true);
       setIsAuthReady(true);
-
-      // Auto-apply budget suggestions when user has no budgets yet and autoAdjustBudgets enabled
-      try {
-        const autoAdjustBudgets = true; // default behaviour per user request
-        if (autoAdjustBudgets && normalizedBudgets.length === 0 && toNumber(dashboardSummary.total_income) > 0) {
-          const suggestions = getBudgetSuggestions(dashboardSummary.total_income);
-          for (const s of suggestions) {
-            const match = findCategoryByName(s.category, defaultCategories, userDefinedCategories);
-            if (!match || !match.id) continue;
-            // Send create/upsert to backend
-            try {
-              await apiRequest("/api/budgets", {
-                method: "POST",
-                token,
-                body: JSON.stringify({ category_id: match.id, amount: s.amount, period: currentPeriod() }),
-              });
-            } catch {
-              // ignore per-category failures
-            }
-          }
-
-          // Refresh budgets after applying
-          const refreshed = await apiRequest(`/api/budgets?period=${currentPeriod()}`, { token });
-          setBudgets(applyBudgetColors((refreshed?.data?.budgets || []).map((b) => mapBudget(b, {}))));
-        }
-      } catch {
-        // ignore auto-apply failures
-      }
     } catch {
       clearStoredAuthSession();
       setAuthToken(null);
@@ -431,6 +465,94 @@ export const AppProvider = ({ children }) => {
 
     setTransactions((prev) => prev.filter((transaction) => transaction.id !== id));
     await bootstrapAppData(authToken);
+  };
+
+  // ---------------------------------------------------------------------------
+  // Savings goals (tujuan tabungan)
+  // ---------------------------------------------------------------------------
+
+  const fetchSavingsGoals = useCallback(async () => {
+    if (!authToken) throw new Error("Anda harus masuk terlebih dahulu");
+
+    const response = await apiRequest("/api/savings-goals", { token: authToken });
+    const goals = response?.data?.goals || [];
+    const availableBalance = toNumber(response?.data?.available_balance);
+    setSavingsGoals(goals);
+    setSavingsAvailableBalance(availableBalance);
+    setSavingsReady(true);
+    return { goals, available_balance: availableBalance };
+  }, [authToken]);
+
+  const fetchSavingsInsights = useCallback(async () => {
+    if (!authToken) throw new Error("Anda harus masuk terlebih dahulu");
+
+    const response = await apiRequest("/api/savings-goals/insights", { token: authToken });
+    const insights = response?.data?.insights || [];
+    setSavingsInsights(insights);
+    return insights;
+  }, [authToken]);
+
+  const refreshSavingsData = useCallback(async () => {
+    await Promise.all([fetchSavingsGoals(), fetchSavingsInsights()]);
+  }, [fetchSavingsGoals, fetchSavingsInsights]);
+
+  const createSavingsGoal = async ({ name, target_amount, deadline }) => {
+    if (!authToken) throw new Error("Anda harus masuk terlebih dahulu");
+
+    const response = await apiRequest("/api/savings-goals", {
+      method: "POST",
+      token: authToken,
+      body: JSON.stringify({
+        name,
+        target_amount,
+        deadline: deadline || null,
+      }),
+    });
+
+    const createdGoal = response?.data?.goal;
+    if (createdGoal) {
+      setSavingsGoals((prev) => [createdGoal, ...prev.filter((g) => g.id !== createdGoal.id)]);
+    }
+
+    await bootstrapAppData(authToken).catch(() => null);
+    return createdGoal;
+  };
+
+  const depositToSavingsGoal = async (goalId, amount) => {
+    if (!authToken) throw new Error("Anda harus masuk terlebih dahulu");
+
+    const response = await apiRequest(`/api/savings-goals/${goalId}/deposit`, {
+      method: "POST",
+      token: authToken,
+      body: JSON.stringify({ amount: Math.abs(toNumber(amount)), payment_method: "bank_transfer" }),
+    });
+
+    await bootstrapAppData(authToken).catch(() => null);
+    return response?.data;
+  };
+
+  const withdrawFromSavingsGoal = async (goalId, amount) => {
+    if (!authToken) throw new Error("Anda harus masuk terlebih dahulu");
+
+    const response = await apiRequest(`/api/savings-goals/${goalId}/withdraw`, {
+      method: "POST",
+      token: authToken,
+      body: JSON.stringify({ amount: Math.abs(toNumber(amount)), payment_method: "bank_transfer" }),
+    });
+
+    await bootstrapAppData(authToken).catch(() => null);
+    return response?.data;
+  };
+
+  const deleteSavingsGoal = async (goalId) => {
+    if (!authToken) throw new Error("Anda harus masuk terlebih dahulu");
+
+    await apiRequest(`/api/savings-goals/${goalId}`, {
+      method: "DELETE",
+      token: authToken,
+    });
+
+    await bootstrapAppData(authToken).catch(() => null);
   };
 
   // ---------------------------------------------------------------------------
@@ -584,6 +706,10 @@ export const AppProvider = ({ children }) => {
       setCategories([]);
       setCustomCategories([]);
       setInvestments(null);
+      setSavingsGoals([]);
+      setSavingsAvailableBalance(null);
+      setSavingsInsights([]);
+      setSavingsReady(false);
       setIsAuthenticated(false);
       setHasUnreadNotifications(false);
     }
@@ -631,8 +757,12 @@ export const AppProvider = ({ children }) => {
     return await addBudget({ category, total: amount, period });
   };
 
-  const applyAllBudgetSuggestions = async (income = user.monthlyIncome, period = currentPeriod()) => {
-    const suggestions = getBudgetSuggestions(income);
+  const applyAllBudgetSuggestions = async (
+    income = user.monthlyIncome,
+    tabungan = 0,
+    period = currentPeriod()
+  ) => {
+    const suggestions = getBudgetSuggestions(income, tabungan);
     const existingCategories = new Set(budgets.map((budget) => normalizeCategoryName(budget.category)));
 
     for (const s of suggestions) {
@@ -710,6 +840,17 @@ export const AppProvider = ({ children }) => {
         categories,
         customCategories,
         investments,
+        savingsGoals,
+        savingsAvailableBalance,
+        savingsInsights,
+        savingsReady,
+        fetchSavingsGoals,
+        fetchSavingsInsights,
+        refreshSavingsData,
+        createSavingsGoal,
+        depositToSavingsGoal,
+        withdrawFromSavingsGoal,
+        deleteSavingsGoal,
         dashboardSummary,
         isAuthenticated,
         isAuthReady,

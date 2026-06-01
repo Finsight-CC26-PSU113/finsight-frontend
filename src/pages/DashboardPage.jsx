@@ -5,7 +5,7 @@ import { SpendingChart } from "../components/dashboard/SpendingChart";
 import { RecentTransactions } from "../components/dashboard/RecentTransactions";
 import { AiRecommendationFeed } from "../components/dashboard/AiRecommendationFeed";
 import { AnomalyDetectionWidget } from "../components/dashboard/AnomalyDetectionWidget";
-import { FinancialGoalWidget } from "../components/dashboard/FinancialGoalWidget";
+import { SavingsOverviewWidget } from "../components/dashboard/SavingsOverviewWidget";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
 import { OnboardingSurveyModal } from "../components/onboarding/OnboardingSurveyModal";
@@ -165,8 +165,8 @@ export const DashboardPage = () => {
           <div id="tour-ai-recommendations">
             <AiRecommendationFeed />
           </div>
-          <div id="tour-financial-goal">
-            <FinancialGoalWidget />
+          <div id="tour-savings-overview">
+            <SavingsOverviewWidget />
           </div>
         </div>
       </div>
