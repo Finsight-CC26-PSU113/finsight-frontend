@@ -154,7 +154,7 @@ export const SpendingChart = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 12 }} dy={10} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 12 }} dy={10} interval={0} />
                 <YAxis width={78} axisLine={false} tickLine={false} tickMargin={12} tick={{ fill: "#64748b", fontSize: 12 }} tickFormatter={(value) => `Rp ${value}`} />
                 <Tooltip contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }} itemStyle={{ color: "#0f172a", fontWeight: "bold" }} formatter={(value) => [`Rp ${value}`, "Terpakai"]} />
                 <Area type="monotone" dataKey="spent" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorSpent)" activeDot={{ r: 6, strokeWidth: 0, fill: "#4f46e5" }} />

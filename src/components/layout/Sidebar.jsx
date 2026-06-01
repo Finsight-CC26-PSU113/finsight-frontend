@@ -1,9 +1,7 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Receipt, PieChart, Sparkles, Settings, LogOut, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
-import { useAppContext } from "../../context/AppContext";
+import { LayoutDashboard, Receipt, PieChart, Sparkles, Settings, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 
 export const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
-  const { logout } = useAppContext();
 
   const navItems = [
     { name: "Beranda", path: "/", icon: LayoutDashboard },
@@ -41,10 +39,6 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
           <Settings className="w-5 h-5 shrink-0" />
           {!isCollapsed && <span>Pengaturan</span>}
         </NavLink>
-        <button onClick={logout} className={`flex items-center gap-3 py-3 w-full text-red-500 hover:bg-red-50 rounded-xl transition-colors ${isCollapsed ? "justify-center px-0" : "px-4"}`} title={isCollapsed ? "Keluar" : undefined}>
-          <LogOut className="w-5 h-5 shrink-0" />
-          {!isCollapsed && <span>Keluar</span>}
-        </button>
       </div>
     </aside>
   );

@@ -1,46 +1,102 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { useAppContext } from "../context/AppContext";
-import { AlertTriangle, Plus, Target, Wallet, Save, Edit2, Trash2, Car, Utensils, Clapperboard, Zap, PiggyBank, Bot, ArrowRight } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { AlertTriangle, Plus, Target, Wallet, Save, Edit2, Trash2, Car, Utensils, Clapperboard, Zap, PiggyBank, Bot, ArrowRight, ChartPie } from "lucide-react";
+import { PieChart as RechartsPieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { buildExpenseCategoryOptions, formatCategoryLabel, normalizeCategoryName } from "../utils/categoryUtils";
+import { getNextUnusedBudgetColor } from "../utils/budgetColors";
 
 export const BudgetPage = () => {
-  const { budgets, addBudget, getBudgetSuggestions, applyBudgetSuggestion, applyAllBudgetSuggestions, user, categories, customCategories } = useAppContext();
+  const { budgets, transactions, addBudget, updateBudget, deleteBudget, getBudgetSuggestions, applyBudgetSuggestion, applyAllBudgetSuggestions, user, categories, customCategories, dashboardSummary } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newBudget, setNewBudget] = useState({ category: "transportasi", total: "", color: "bg-blue-500" });
+  const [newBudget, setNewBudget] = useState({ categoryId: "", total: "" });
+  const [editingBudget, setEditingBudget] = useState(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const budgetCategoryOptions = Array.from(new Set([...categories, ...customCategories].map((category) => category?.name).filter(Boolean)));
-  const fallbackCategories = ["transportasi", "belanja", "makanan", "hiburan", "sosial", "pendidikan", "travel", "kesehatan dan perawatan diri", "tagihan", "lainnya"];
-  const categoriesForSelect = budgetCategoryOptions.length > 0 ? budgetCategoryOptions : fallbackCategories;
+  const categoryOptions = useMemo(() => buildExpenseCategoryOptions(categories, customCategories), [categories, customCategories]);
 
-  const colors = [
-    { name: "Blue", value: "bg-blue-500" },
-    { name: "Purple", value: "bg-purple-500" },
-    { name: "Red", value: "bg-red-500" },
-    { name: "Yellow", value: "bg-yellow-500" },
-    { name: "Green", value: "bg-green-500" },
-    { name: "Indigo", value: "bg-indigo-500" },
-    { name: "Pink", value: "bg-pink-500" },
-  ];
+  useEffect(() => {
+    if (!newBudget.categoryId && categoryOptions[0]?.id) {
+      setNewBudget((prev) => ({ ...prev, categoryId: categoryOptions[0].id }));
+    }
+  }, [categoryOptions, newBudget.categoryId]);
+
+  const chartBudgets = useMemo(() => budgets.filter((budget) => Number(budget.total) > 0), [budgets]);
+
+  const chartPieData = useMemo(
+    () =>
+      chartBudgets.map((b) => ({
+        name: b.category,
+        value: Number(b.total),
+        fill: b.chartColor || "#94a3b8",
+      })),
+    [chartBudgets]
+  );
+
+  const openCreateBudgetModal = () => {
+    setNewBudget((prev) => ({
+      ...prev,
+      categoryId: prev.categoryId || categoryOptions[0]?.id || "",
+    }));
+    setIsModalOpen(true);
+  };
 
   const handleCreateBudget = async (e) => {
     e.preventDefault();
     if (!newBudget.total) return;
 
     try {
+      const selectedCategory = categoryOptions.find((option) => option.id === newBudget.categoryId);
+      if (!selectedCategory) {
+        window.alert("Pilih kategori yang valid dari daftar.");
+        return;
+      }
+
       await addBudget({
-        category: newBudget.category,
+        category_id: selectedCategory.id,
+        category: selectedCategory.name,
         total: parseFloat(newBudget.total),
-        color: newBudget.color,
+        color: getNextUnusedBudgetColor(budgets),
       });
 
       setIsModalOpen(false);
-      setNewBudget({ category: "transportasi", total: "", color: "bg-blue-500" });
+      setNewBudget({ categoryId: categoryOptions[0]?.id || "", total: "" });
     } catch (error) {
       window.alert(error.message || "Gagal menyimpan anggaran");
+    }
+  };
+
+  const handleEditBudget = (budget) => {
+    setEditingBudget(budget);
+    setEditAmount(budget.total.toString());
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editAmount || !editingBudget) return;
+
+    try {
+      await updateBudget(editingBudget.id, parseFloat(editAmount));
+      setIsEditModalOpen(false);
+      setEditingBudget(null);
+      setEditAmount("");
+    } catch (error) {
+      window.alert(error.message || "Gagal memperbarui anggaran");
+    }
+  };
+
+  const handleDeleteBudget = async (budgetId) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus anggaran ini?")) return;
+
+    try {
+      await deleteBudget(budgetId);
+    } catch (error) {
+      window.alert(error.message || "Gagal menghapus anggaran");
     }
   };
 
@@ -82,10 +138,33 @@ export const BudgetPage = () => {
     }).format(amount);
   };
 
-  // Calculate totals
-  const totalBudget = budgets.reduce((acc, curr) => acc + curr.total, 0);
-  const totalSpent = budgets.reduce((acc, curr) => acc + curr.spent, 0);
-  const totalRemaining = totalBudget - totalSpent;
+  const suggestionIncome = useMemo(() => {
+    const fromDashboard = Number(user.monthlyIncome || 0);
+    if (fromDashboard > 0) return fromDashboard;
+
+    const now = new Date();
+    const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    return transactions
+      .filter((t) => t.type === "income" && String(t.date || "").startsWith(monthPrefix))
+      .reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
+  }, [user.monthlyIncome, transactions]);
+
+  const budgetSuggestions = useMemo(() => getBudgetSuggestions(suggestionIncome), [getBudgetSuggestions, suggestionIncome]);
+
+  const existingSuggestionCategories = useMemo(
+    () => new Set(budgets.map((budget) => normalizeCategoryName(budget.category))),
+    [budgets]
+  );
+
+  const pendingSuggestions = useMemo(
+    () => budgetSuggestions.filter((suggestion) => !existingSuggestionCategories.has(normalizeCategoryName(suggestion.category))),
+    [budgetSuggestions, existingSuggestionCategories]
+  );
+
+  // Use backend totals from dashboardSummary (computed on server)
+  const totalBudget = Number(dashboardSummary?.total_budget || 0);
+  const totalSpent = Number(dashboardSummary?.total_spent || 0);
+  const totalRemaining = Number(dashboardSummary?.total_remaining || 0);
   const isBudgetAlert = totalRemaining < 0;
   const overallPercentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
   const potentialSavings = Math.max(0, Number(user.monthlyIncome || 0) - Number(user.monthlyExpenses || 0) - totalSpent);
@@ -98,7 +177,7 @@ export const BudgetPage = () => {
           <h1 className="text-2xl font-bold text-slate-900">Ringkasan Anggaran</h1>
           <p className="text-slate-500">Pantau batas pengeluaran dan tujuan Anda.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center gap-2">
+        <Button onClick={openCreateBudgetModal} className="w-full sm:w-auto flex items-center justify-center gap-2">
           <Plus className="w-4 h-4" />
           Buat Anggaran
         </Button>
@@ -107,12 +186,22 @@ export const BudgetPage = () => {
         <form onSubmit={handleCreateBudget} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
-            <select value={newBudget.category} onChange={(e) => setNewBudget({ ...newBudget, category: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none capitalize">
-              {categoriesForSelect.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
+            <select
+              value={newBudget.categoryId}
+              onChange={(e) => setNewBudget({ ...newBudget, categoryId: e.target.value })}
+              required
+              disabled={categoryOptions.length === 0}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+            >
+              {categoryOptions.length === 0 ? (
+                <option value="">Kategori belum dimuat — cek backend & seed DB</option>
+              ) : (
+                categoryOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))
+              )}
             </select>
           </div>
           <div>
@@ -122,17 +211,35 @@ export const BudgetPage = () => {
               <input type="number" required min="1" value={newBudget.total} onChange={(e) => setNewBudget({ ...newBudget, total: e.target.value })} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" placeholder="0" />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Label Warna</label>
-            <div className="flex gap-2 flex-wrap">
-              {colors.map((c) => (
-                <button key={c.value} type="button" onClick={() => setNewBudget({ ...newBudget, color: c.value })} className={`w-8 h-8 rounded-full ${c.value} ${newBudget.color === c.value ? "ring-2 ring-offset-2 ring-slate-400" : ""}`} />
-              ))}
-            </div>
-          </div>
           <Button type="submit" fullWidth className="mt-4 flex items-center justify-center gap-2">
             <Save className="w-4 h-4" /> Simpan Anggaran
           </Button>
+        </form>
+      </Modal>
+
+      {/* Edit Budget Modal */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Anggaran">
+        <form onSubmit={handleSaveEdit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
+            <input type="text" disabled value={editingBudget?.category || ""} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed" />
+            <p className="text-xs text-slate-400 mt-1">Kategori tidak bisa diubah</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Batas Bulanan</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">Rp</span>
+              <input type="number" required min="1" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" />
+            </div>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+              Batal
+            </Button>
+            <Button type="submit" className="flex items-center justify-center gap-2">
+              <Save className="w-4 h-4" /> Simpan Perubahan
+            </Button>
+          </div>
         </form>
       </Modal>
 
@@ -180,94 +287,58 @@ export const BudgetPage = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
         <Card>
           <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="w-full md:w-1/2 h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={budgets.map((b) => ({
-                      name: b.category,
-                      value: b.total,
-                      fill:
-                        {
-                          "text-orange-500": "#f97316",
-                          "text-blue-500": "#3b82f6",
-                          "text-purple-500": "#a855f7",
-                          "text-yellow-500": "#eab308",
-                          "bg-blue-500": "#3b82f6",
-                          "bg-purple-500": "#a855f7",
-                          "bg-red-500": "#ef4444",
-                          "bg-yellow-500": "#eab308",
-                          "bg-green-500": "#22c55e",
-                          "bg-indigo-500": "#6366f1",
-                          "bg-pink-500": "#ec4899",
-                        }[b.color] || "#94a3b8",
-                    }))}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={110}
-                    paddingAngle={5}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {budgets.map((b, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          {
-                            "text-orange-500": "#f97316",
-                            "text-blue-500": "#3b82f6",
-                            "text-purple-500": "#a855f7",
-                            "text-yellow-500": "#eab308",
-                            "bg-blue-500": "#3b82f6",
-                            "bg-purple-500": "#a855f7",
-                            "bg-red-500": "#ef4444",
-                            "bg-yellow-500": "#eab308",
-                            "bg-green-500": "#22c55e",
-                            "bg-indigo-500": "#6366f1",
-                            "bg-pink-500": "#ec4899",
-                          }[b.color] || "#94a3b8"
-                        }
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => formatRp(value)} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }} />
-                  <Legend verticalAlign="bottom" align="center" layout="horizontal" iconType="circle" />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="w-full md:w-1/2 min-h-[300px] h-[300px]">
+              {chartPieData.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-6 text-center">
+                  <ChartPie className="w-12 h-12 text-slate-300 mb-3" />
+                  <p className="text-sm font-medium text-slate-600">Belum ada data distribusi</p>
+                  <p className="text-xs text-slate-500 mt-1 mb-4">Buat anggaran per kategori untuk melihat grafik alokasi dana.</p>
+                  <Button type="button" size="sm" onClick={openCreateBudgetModal} className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Buat Anggaran
+                  </Button>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPieChart>
+                    <Pie
+                      data={chartPieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={100}
+                      paddingAngle={chartPieData.length > 1 ? 4 : 0}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {chartPieData.map((entry, index) => (
+                        <Cell key={`cell-${entry.name}-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatRp(value)} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }} />
+                    <Legend verticalAlign="bottom" align="center" layout="horizontal" iconType="circle" />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+              )}
             </div>
             <div className="w-full md:w-1/2">
               <h3 className="text-xl font-bold text-slate-900 mb-2">Distribusi Anggaran</h3>
               <p className="text-slate-500 mb-6">Melihat bagaimana dana Anda dialokasikan ke berbagai kategori untuk bulan ini.</p>
 
               <div className="space-y-4">
-                {budgets.slice(0, 4).map((b) => (
-                  <div key={b.id} className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{
-                          backgroundColor:
-                            {
-                              "text-orange-500": "#f97316",
-                              "text-blue-500": "#3b82f6",
-                              "text-purple-500": "#a855f7",
-                              "text-yellow-500": "#eab308",
-                              "bg-blue-500": "#3b82f6",
-                              "bg-purple-500": "#a855f7",
-                              "bg-red-500": "#ef4444",
-                              "bg-yellow-500": "#eab308",
-                              "bg-green-500": "#22c55e",
-                              "bg-indigo-500": "#6366f1",
-                              "bg-pink-500": "#ec4899",
-                            }[b.color] || "#94a3b8",
-                        }}
-                      ></div>
-                      <span className="font-medium text-slate-700 capitalize">{b.category}</span>
+                {chartBudgets.length === 0 ? (
+                  <p className="text-sm text-slate-500">Ringkasan persentase akan muncul setelah Anda menambahkan anggaran.</p>
+                ) : (
+                  chartBudgets.slice(0, 6).map((b) => (
+                    <div key={b.id} className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: b.chartColor || "#94a3b8" }}></div>
+                        <span className="font-medium text-slate-700 capitalize">{b.category}</span>
+                      </div>
+                      <span className="font-bold text-slate-900">{totalBudget > 0 ? ((b.total / totalBudget) * 100).toFixed(0) : 0}%</span>
                     </div>
-                    <span className="font-bold text-slate-900">{((b.total / totalBudget) * 100).toFixed(0)}%</span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -278,10 +349,16 @@ export const BudgetPage = () => {
       <Card className="p-0 overflow-hidden border-none shadow-sm ring-1 ring-slate-100">
         <div className="flex flex-col divide-y divide-slate-100">
           {budgets.length === 0 ? (
-            <div className="p-6 text-sm text-slate-500">Belum ada anggaran yang tersinkron dari backend.</div>
+            <div className="p-6 text-sm text-slate-500">Belum ada anggaran. Mari buat anggaran pertama Anda!</div>
           ) : (
             budgets.map((budget, index) => {
-              const percentage = budget.total > 0 ? (budget.spent / budget.total) * 100 : 0;
+              // Get spent amount from backend budget_progress for this budget's category
+              const categoryProgress = (dashboardSummary?.budget_progress || []).find(
+                (p) => `${p.name || ""}`.toLowerCase() === `${budget.category || ""}`.toLowerCase()
+              );
+              const spentForBudget = Number(budget.spent ?? categoryProgress?.spent_amount ?? 0);
+
+              const percentage = budget.total > 0 ? (spentForBudget / budget.total) * 100 : 0;
 
               // Logic Status
               let statusText = "Aman";
@@ -303,8 +380,8 @@ export const BudgetPage = () => {
 
               // Logic Insight (Asumsi hari ke-15)
               const currentDay = 15;
-              const dailyAvg = budget.spent / currentDay;
-              const remaining = budget.total - budget.spent;
+              const dailyAvg = spentForBudget / currentDay;
+              const remaining = budget.total - spentForBudget;
               const daysLeft = remaining > 0 && dailyAvg > 0 ? Math.floor(remaining / dailyAvg) : 0;
               let insightText = "";
               if (percentage >= 100) {
@@ -337,7 +414,7 @@ export const BudgetPage = () => {
                     <div className="lg:w-[45%] flex flex-col justify-center mt-2 lg:mt-0">
                       <div className="flex justify-between items-end mb-2">
                         <span className={`text-sm font-bold ${progressColor.replace("bg-", "text-")}`}>Terpakai {percentage.toFixed(0)}%</span>
-                        <span className="text-sm font-medium text-slate-700">{formatRp(budget.spent)}</span>
+                        <span className="text-sm font-medium text-slate-700">{formatRp(spentForBudget)}</span>
                       </div>
                       <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-2">
                         <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(percentage, 100)}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full rounded-full ${progressColor}`} />
@@ -350,10 +427,10 @@ export const BudgetPage = () => {
                     {/* Actions & Detail */}
                     <div className="lg:w-[15%] flex flex-col sm:flex-row lg:flex-col justify-between sm:items-center lg:items-end gap-3 shrink-0 lg:border-l lg:border-slate-100 lg:pl-4 mt-4 lg:mt-0">
                       <div className="flex gap-1 w-full sm:w-auto justify-end">
-                        <button className="p-2 text-slate-400 hover:text-primary-600 transition-colors rounded-lg hover:bg-primary-50">
+                        <button onClick={() => handleEditBudget(budget)} className="p-2 text-slate-400 hover:text-primary-600 transition-colors rounded-lg hover:bg-primary-50">
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button className="p-2 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
+                        <button onClick={() => handleDeleteBudget(budget.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -369,36 +446,64 @@ export const BudgetPage = () => {
         </div>
       </Card>
 
-      {/* Suggested Budgets */}
-      <Card>
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Saran Anggaran Berdasarkan Pemasukan</h2>
-            <p className="text-sm text-slate-500">Kami merekomendasikan alokasi anggaran berdasarkan pemasukan bulanan Anda.</p>
-          </div>
-          <div className="w-full sm:w-auto flex items-center gap-2">
-            <Button onClick={() => applyAllBudgetSuggestions(user.monthlyIncome)} className="text-sm w-full sm:w-auto">
-              Terapkan Semua
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {getBudgetSuggestions(user.monthlyIncome).map((s) => (
-            <div key={s.category} className="p-4 bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-medium capitalize">{s.category}</div>
-                <div className="text-xs text-slate-500">Saran: Rp {s.amount.toLocaleString("id-ID")}</div>
-              </div>
-              <div className="w-full sm:w-auto">
-                <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => applyBudgetSuggestion(s.category, s.amount)}>
-                  Terapkan
-                </Button>
-              </div>
+      {/* Saran anggaran — disembunyikan jika semua kategori sudah punya budget bulan ini */}
+      {pendingSuggestions.length > 0 && (
+        <Card>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Saran Anggaran Berdasarkan Pemasukan</h2>
+              <p className="text-sm text-slate-500">Kami merekomendasikan alokasi anggaran berdasarkan pemasukan bulanan Anda.</p>
             </div>
-          ))}
-        </div>
-      </Card>
+            <div className="w-full sm:w-auto flex items-center gap-2">
+              <Button
+                onClick={() => applyAllBudgetSuggestions(suggestionIncome)}
+                disabled={suggestionIncome <= 0}
+                className="text-sm w-full sm:w-auto"
+              >
+                Terapkan Semua
+              </Button>
+            </div>
+          </div>
+
+          {suggestionIncome <= 0 ? (
+            <p className="mt-4 text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+              Belum ada pemasukan bulan ini. Tambahkan transaksi <strong>Pemasukan</strong> dulu agar nominal saran terisi; kartu kategori di bawah menampilkan persentase alokasi.
+            </p>
+          ) : (
+            <p className="mt-4 text-sm text-slate-600">
+              Berdasarkan pemasukan bulan ini: <span className="font-semibold text-slate-900">{formatRp(suggestionIncome)}</span>
+            </p>
+          )}
+
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pendingSuggestions.map((s) => (
+              <div key={s.category} className="p-4 bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium">{formatCategoryLabel(s.category)}</div>
+                  <div className="text-xs text-slate-500">
+                    {suggestionIncome > 0 ? (
+                      <>Saran: {formatRp(s.amount)}</>
+                    ) : (
+                      <>Alokasi: {Math.round((s.percent || 0) * 100)}% dari pemasukan</>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full sm:w-auto">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    disabled={s.amount <= 0}
+                    onClick={() => applyBudgetSuggestion(s.category, s.amount)}
+                  >
+                    Terapkan
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Bottom Insights */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">

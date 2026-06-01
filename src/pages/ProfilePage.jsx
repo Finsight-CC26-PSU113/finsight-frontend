@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { useAppContext } from "../context/AppContext";
-import { User, Settings, Bell, Shield, LogOut, Upload } from "lucide-react";
+import { User, Settings, Bell, LogOut, Upload } from "lucide-react";
 import { getApiBaseUrl } from "../utils/apiClient";
 import { getAvatarFallbackStyle, getAvatarInitials } from "../utils/profileAvatar";
 import { getStoredAuthSession } from "../utils/apiClient";
@@ -13,9 +13,29 @@ export const ProfilePage = () => {
   const { user, logout, updateProfile } = useAppContext();
   const [avatarPreview, setAvatarPreview] = useState("");
   const [pendingAvatarFile, setPendingAvatarFile] = useState(null);
+  const [pushEnabled, setPushEnabled] = useState(Boolean(user.push_notifications_enabled));
   const avatarInputRef = useRef(null);
 
   const memberSinceLabel = getMemberSinceLabel(user.created_at || user.createdAt);
+
+  useEffect(() => {
+    setPushEnabled(Boolean(user.push_notifications_enabled));
+  }, [user.push_notifications_enabled]);
+
+  const handlePushToggle = async (checked) => {
+    setPushEnabled(checked);
+
+    if (checked && typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+
+    try {
+      await updateProfile({ push_notifications_enabled: checked });
+    } catch (error) {
+      setPushEnabled(!checked);
+      window.alert(error.message || "Gagal menyimpan pengaturan notifikasi");
+    }
+  };
 
   const handleProfileSave = async (event) => {
     event.preventDefault();
@@ -175,30 +195,20 @@ export const ProfilePage = () => {
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" value="" className="sr-only peer" checked={Boolean(user.push_notifications_enabled)} readOnly />
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={pushEnabled}
+                      onChange={(event) => handlePushToggle(event.target.checked)}
+                    />
                     <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                   </label>
-                </div>
-
-                <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
-                      <Shield className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">Autentikasi Dua Faktor</p>
-                      <p className="text-xs text-slate-500">Amankan akun Anda</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Aktifkan
-                  </Button>
                 </div>
               </div>
             </Card>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="pt-1 md:hidden">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="pt-1">
             <Button variant="danger" fullWidth className="py-3 sm:w-auto sm:px-6" onClick={logout}>
               <LogOut className="w-5 h-5 mr-2" />
               Keluar dari FINSIGHT

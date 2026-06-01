@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Bell, Search, AlertTriangle, Sparkles, CheckCircle2 } from "lucide-react";
+import { Bell, Search, AlertTriangle, Sparkles, CheckCircle2, Menu, Settings, TrendingUp, UserCircle } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Modal } from "../ui/Modal";
@@ -20,6 +20,7 @@ export const Topbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Get greeting based on time of day
   const hour = new Date().getHours();
@@ -42,6 +43,15 @@ export const Topbar = () => {
     <header className="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center gap-4 px-4 md:px-6 sticky top-0 z-30">
       {/* Left: greeting (desktop only) + search bar */}
       <div className="flex items-center gap-4 flex-1 min-w-0">
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+          aria-label="Buka menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
         <div className="hidden md:block shrink-0">
           <h1 className="text-xl font-semibold text-slate-900">
             {greeting}, {user.name} 👋
@@ -101,6 +111,47 @@ export const Topbar = () => {
             );
           })}
           {insights.length === 0 && <div className="text-center py-8 text-slate-400 text-sm">Tidak ada notifikasi baru.</div>}
+        </div>
+      </Modal>
+
+      {/* Mobile menu (hamburger) */}
+      <Modal isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} title="Menu">
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              navigate("/investments");
+            }}
+            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+          >
+            <TrendingUp className="w-5 h-5 text-slate-500" />
+            <span className="font-medium text-slate-900">Investasi</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              navigate("/profile");
+            }}
+            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+          >
+            <UserCircle className="w-5 h-5 text-slate-500" />
+            <span className="font-medium text-slate-900">Profil</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              navigate("/settings");
+            }}
+            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+          >
+            <Settings className="w-5 h-5 text-slate-500" />
+            <span className="font-medium text-slate-900">Pengaturan</span>
+          </button>
         </div>
       </Modal>
     </header>

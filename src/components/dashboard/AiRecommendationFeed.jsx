@@ -1,6 +1,7 @@
 import React from "react";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
+import { Link } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
 import { motion } from "framer-motion";
 import { Sparkles, AlertTriangle, Lightbulb, Target } from "lucide-react";
@@ -30,7 +31,16 @@ export const AiRecommendationFeed = () => {
 
       {feedInsights.length === 0 ? (
         <Card className="border-dashed border-slate-200 bg-slate-50/80">
-          <p className="text-sm text-slate-500">Belum ada insight AI yang tersinkron dari backend.</p>
+          <p className="text-sm text-slate-700 mb-2">Hai! Saat ini belum ada insight AI yang tersedia untuk akunmu.</p>
+          <p className="text-sm text-slate-500 mb-4">Tambah beberapa transaksi atau sinkronkan akunmu supaya FINSIGHT dapat menganalisis aktivitas dan memberikan rekomendasi khusus.</p>
+          <div className="flex items-center gap-2">
+            <Link to="/transactions">
+              <Button size="sm" variant="primary">Tambahkan Transaksi</Button>
+            </Link>
+            <Link to="/investments">
+              <Button size="sm" variant="ghost">Lihat Investasi</Button>
+            </Link>
+          </div>
         </Card>
       ) : (
         feedInsights.map((insight, index) => (

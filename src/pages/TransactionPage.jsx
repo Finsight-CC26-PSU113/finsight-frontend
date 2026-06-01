@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -6,11 +6,12 @@ import { Modal } from "../components/ui/Modal";
 import { useAppContext } from "../context/AppContext";
 import { Search, Plus, Trash2, ArrowUpRight, ArrowDownRight, SlidersHorizontal, Calendar, Sparkles, Check, Loader2, AlertCircle } from "lucide-react";
 import { UploadCloud, Edit3 } from "lucide-react";
-import { getApiBaseUrl } from "../utils/apiClient";
+import { apiRequest } from "../utils/apiClient";
 import { RECEIPT_IMAGE_ACCEPT, buildTransactionFromScan, formatDateHeader, getCategoryStyles, getLatestTxMonthAndYear, getPaymentMethod, getTime, getUniqueMonths, isAllowedReceiptImageFile, preprocessReceiptImage } from "../utils/transactionPage";
+import { EXPENSE_FILTER_CATEGORIES, formatCategoryLabel, normalizeCategoryName } from "../utils/categoryUtils";
 
 export const TransactionPage = () => {
-  const { transactions, deleteTransaction, openAddTxModal, openEditTxModal, globalSearchTerm, setGlobalSearchTerm, addTransaction } = useAppContext();
+  const { transactions, deleteTransaction, openAddTxModal, openEditTxModal, globalSearchTerm, setGlobalSearchTerm, addTransaction, authToken, refreshTransactions, insights } = useAppContext();
 
   const [filter, setFilter] = useState("all");
   const [showExtraFilters, setShowExtraFilters] = useState(false);
@@ -68,6 +69,11 @@ export const TransactionPage = () => {
       return;
     }
 
+    if (!authToken) {
+      showScanStatus("error", "Silakan masuk untuk memindai struk.", 2800);
+      return;
+    }
+
     try {
       setIsScanningReceipt(true);
       showScanStatus("loading", "Memproses struk...");
@@ -75,18 +81,11 @@ export const TransactionPage = () => {
       const uploadFile = await preprocessReceiptImage(file);
       formData.append("image", uploadFile);
 
-      const res = await fetch(`${getApiBaseUrl()}/api/scan`, {
+      const payload = await apiRequest("/api/scan", {
         method: "POST",
+        token: authToken,
         body: formData,
-        credentials: "include",
       });
-
-      const payload = await res.json().catch(() => null);
-      if (!res.ok) {
-        const errorMessage = payload?.message || payload?.detail || "Gambar tidak dapat diproses saat ini.";
-        showScanStatus("error", errorMessage === "Validation failed" ? "Data struk belum lengkap. Coba upload ulang." : errorMessage, 2800);
-        return;
-      }
 
       const scan = payload?.data?.scan || payload?.scan || payload;
       const transactionFromScan = buildTransactionFromScan(scan);
@@ -114,6 +113,20 @@ export const TransactionPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (authToken && transactions.length === 0) {
+      refreshTransactions().catch(() => {
+        // Silence any refresh error and continue using existing local state
+      });
+    }
+  }, [authToken, transactions.length, refreshTransactions]);
+
+  const topInsight = insights[0] || {
+    title: "Rangkuman AI sedang disiapkan",
+    description: "Kami sedang mengumpulkan data transaksi Anda. Coba kembali setelah transaksi tersinkronisasi.",
+    action: "Lihat Wawasan",
+  };
+
   const activeDateInfo = getLatestTxMonthAndYear(transactions);
 
   const monthlyIncomeTotal = transactions
@@ -134,7 +147,8 @@ export const TransactionPage = () => {
     .filter((tx) => {
       const matchesSearch = tx.title.toLowerCase().includes(globalSearchTerm.toLowerCase()) || tx.category.toLowerCase().includes(globalSearchTerm.toLowerCase());
       const matchesFilter = filter === "all" || tx.type === filter;
-      const matchesCategory = selectedCategory === "all" || tx.category.toLowerCase() === selectedCategory.toLowerCase();
+      const matchesCategory =
+        selectedCategory === "all" || normalizeCategoryName(tx.category) === normalizeCategoryName(selectedCategory);
 
       let matchesMonth = true;
       if (selectedMonth !== "all") {
@@ -207,36 +221,30 @@ export const TransactionPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 bg-white border border-slate-100 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pemasukan Bulan Ini</p>
-              <h3 className="text-2xl md:text-3xl font-extrabold text-slate-950 tracking-tight">Rp {monthlyIncomeTotal.toLocaleString("id-ID")}</h3>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">+12%</span>
-                <span className="text-[11px] text-slate-400 font-medium">vs bulan lalu</span>
-              </div>
+      <div className="grid grid-cols-2 gap-4 sm:gap-6">
+        <Card className="relative h-full min-h-[150px] overflow-hidden p-4 sm:p-5 bg-white border border-slate-100 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="p-2.5 sm:p-3 rounded-2xl bg-emerald-50 text-emerald-600 shadow-sm">
+              <ArrowUpRight className="w-5 h-5" />
             </div>
-            <div className="p-3 bg-emerald-50/50 rounded-2xl text-emerald-500 shrink-0">
-              <ArrowUpRight className="w-6 h-6" />
-            </div>
+            <span className="text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap bg-emerald-100 text-emerald-700">{new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(new Date(activeDateInfo.year, activeDateInfo.month, 1))}</span>
+          </div>
+          <div>
+            <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1 leading-tight">Pemasukan Bulanan</p>
+            <h3 className="text-[clamp(1rem,4vw,1.3rem)] sm:text-[clamp(1.1rem,3vw,1.45rem)] md:text-[clamp(1.2rem,2.5vw,1.6rem)] font-bold text-slate-900 leading-tight break-words max-w-full">Rp {monthlyIncomeTotal.toLocaleString("id-ID")}</h3>
           </div>
         </Card>
 
-        <Card className="p-6 bg-white border border-slate-100 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pengeluaran Bulan Ini</p>
-              <h3 className="text-2xl md:text-3xl font-extrabold text-red-500 tracking-tight">Rp {monthlyExpenseTotal.toLocaleString("id-ID")}</h3>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">+5%</span>
-                <span className="text-[11px] text-slate-400 font-medium">vs bulan lalu</span>
-              </div>
+        <Card className="relative h-full min-h-[150px] overflow-hidden p-4 sm:p-5 bg-white border border-slate-100 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="p-2.5 sm:p-3 rounded-2xl bg-rose-50 text-rose-600 shadow-sm">
+              <ArrowDownRight className="w-5 h-5" />
             </div>
-            <div className="p-3 bg-red-50/50 rounded-2xl text-red-500 shrink-0">
-              <ArrowDownRight className="w-6 h-6" />
-            </div>
+            <span className="text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap bg-rose-100 text-rose-700">{new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(new Date(activeDateInfo.year, activeDateInfo.month, 1))}</span>
+          </div>
+          <div>
+            <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1 leading-tight">Pengeluaran Bulanan</p>
+            <h3 className="text-[clamp(1rem,4vw,1.3rem)] sm:text-[clamp(1.1rem,3vw,1.45rem)] md:text-[clamp(1.2rem,2.5vw,1.6rem)] font-bold text-red-500 leading-tight break-words max-w-full">Rp {monthlyExpenseTotal.toLocaleString("id-ID")}</h3>
           </div>
         </Card>
       </div>
@@ -267,7 +275,7 @@ export const TransactionPage = () => {
               <Calendar className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="w-full sm:w-auto pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-full text-xs md:text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition-all shadow-sm cursor-pointer appearance-none">
                 <option value="all">Semua Waktu</option>
-                {getUniqueMonths().map((m) => (
+                {getUniqueMonths(transactions).map((m) => (
                   <option key={m.val} value={m.val}>
                     {m.label}
                   </option>
@@ -288,17 +296,11 @@ export const TransactionPage = () => {
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Filter Kategori</label>
               <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-primary-500 capitalize">
                 <option value="all">Semua Kategori</option>
-                <option value="makanan">Makanan & Minum</option>
-                <option value="belanja">Belanja</option>
-                <option value="transportasi">Transportasi</option>
-                <option value="hiburan">Hiburan</option>
-                <option value="tagihan">Tagihan</option>
-                <option value="pendapatan">Pemasukan / Pendapatan</option>
-                <option value="sosial">Sosial</option>
-                <option value="pendidikan">Pendidikan</option>
-                <option value="travel">Travel</option>
-                <option value="kesehatan dan perawatan diri">Kesehatan & Perawatan</option>
-                <option value="lainnya">Lainnya</option>
+                {EXPENSE_FILTER_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {formatCategoryLabel(category)}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -390,14 +392,15 @@ export const TransactionPage = () => {
         <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none">
           <Sparkles className="w-32 h-32 text-white animate-pulse" />
         </div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-2 max-w-2xl">
-            <h4 className="text-sm font-extrabold tracking-wider uppercase text-blue-100 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-200" />
-              Rangkuman AI Finsight
-            </h4>
-            <p className="text-sm md:text-base text-white font-medium leading-relaxed">"Pengeluaranmu di kategori Belanja naik 15% dibanding minggu lalu. Coba batasi pembelian impulsif di akhir pekan untuk tetap sesuai anggaran bulananmu."</p>
-          </div>
+        <div className="relative z-10 space-y-2 max-w-2xl">
+          <h4 className="text-sm font-extrabold tracking-wider uppercase text-blue-100 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-blue-200" />
+            Rangkuman AI Finsight
+          </h4>
+          <h3 className="text-xl md:text-2xl font-bold text-white">{topInsight.title}</h3>
+          <p className="text-sm md:text-base text-white font-medium leading-relaxed">
+            {topInsight.description}
+          </p>
         </div>
       </motion.div>
 

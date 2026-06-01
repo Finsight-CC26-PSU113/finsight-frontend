@@ -4,18 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { useAppContext } from "../context/AppContext";
-import { User, Bell, Shield, Lock, CreditCard, HelpCircle, Smartphone } from "lucide-react";
+import { User, Bell, Lock, HelpCircle } from "lucide-react";
 
 export const SettingsPage = () => {
   const navigate = useNavigate();
   const { user, updateProfile } = useAppContext();
   const [pushEnabled, setPushEnabled] = useState(Boolean(user.push_notifications_enabled));
-  const [emailEnabled, setEmailEnabled] = useState(Boolean(user.email_notifications_enabled));
 
   useEffect(() => {
     setPushEnabled(Boolean(user.push_notifications_enabled));
-    setEmailEnabled(Boolean(user.email_notifications_enabled));
-  }, [user.push_notifications_enabled, user.email_notifications_enabled]);
+  }, [user.push_notifications_enabled]);
 
   const handlePushToggle = async (checked) => {
     setPushEnabled(checked);
@@ -29,17 +27,6 @@ export const SettingsPage = () => {
     } catch (error) {
       setPushEnabled(!checked);
       window.alert(error.message || "Gagal menyimpan pengaturan notifikasi push");
-    }
-  };
-
-  const handleEmailToggle = async (checked) => {
-    setEmailEnabled(checked);
-
-    try {
-      await updateProfile({ email_notifications_enabled: checked });
-    } catch (error) {
-      setEmailEnabled(!checked);
-      window.alert(error.message || "Gagal menyimpan pengaturan email");
     }
   };
 
@@ -75,18 +62,6 @@ export const SettingsPage = () => {
             </label>
           ),
         },
-        {
-          id: "email-notif",
-          icon: Smartphone,
-          title: "Laporan Email",
-          description: "Terima ringkasan laporan keuangan mingguan dan bulanan.",
-          action: (
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" checked={emailEnabled} onChange={(event) => handleEmailToggle(event.target.checked)} />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-            </label>
-          ),
-        },
       ],
     },
     {
@@ -100,33 +75,6 @@ export const SettingsPage = () => {
           action: (
             <Button variant="outline" size="sm" onClick={() => navigate("/forgot-password")}>
               Perbarui
-            </Button>
-          ),
-        },
-        {
-          id: "2fa",
-          icon: Shield,
-          title: "Autentikasi Dua Faktor",
-          description: "Tambahkan lapisan keamanan ekstra pada akun Anda.",
-          action: (
-            <Button variant="outline" size="sm">
-              Aktifkan 2FA
-            </Button>
-          ),
-        },
-      ],
-    },
-    {
-      title: "Tagihan & Langganan",
-      items: [
-        {
-          id: "plan",
-          icon: CreditCard,
-          title: "Paket Saat Ini",
-          description: "Anda saat ini menggunakan paket FINSIGHT Pro.",
-          action: (
-            <Button variant="outline" size="sm" className="text-primary-600 border-primary-200 hover:bg-primary-50">
-              Kelola Paket
             </Button>
           ),
         },

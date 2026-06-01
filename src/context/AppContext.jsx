@@ -1,6 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { apiRequest, clearStoredAuthSession, getStoredAuthSession, setStoredAuthSession } from "../utils/apiClient";
+import { findCategoryByName, normalizeCategoryName, resolveCategoryId as resolveCategoryIdFromLists } from "../utils/categoryUtils";
+import { applyBudgetColors, getNextUnusedBudgetColor, setBudgetColorForCategory } from "../utils/budgetColors";
 
 const AppContext = createContext();
 
@@ -34,6 +36,20 @@ const currentPeriod = () => {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   return `${year}-${month}`;
+};
+
+const enrichDashboardSummary = (summary = {}) => {
+  const budget_progress = summary.budget_progress || [];
+  const total_budget = budget_progress.reduce((sum, item) => sum + toNumber(item.budget_amount), 0);
+  const total_spent = budget_progress.reduce((sum, item) => sum + toNumber(item.spent_amount), 0);
+
+  return {
+    ...summary,
+    budget_progress,
+    total_budget,
+    total_spent,
+    total_remaining: total_budget - total_spent,
+  };
 };
 
 const toNumber = (value) => Number(value ?? 0) || 0;
@@ -83,27 +99,6 @@ const mapBudget = (budget, budgetProgressByCategoryId = {}) => {
   const spent = toNumber(progress.spent_amount);
   const percentage = budgetAmount > 0 ? Math.min(100, (spent / budgetAmount) * 100) : toNumber(progress.percentage);
   const categoryName = budget.category?.name || progress.name || "Lainnya";
-  const colorMap = {
-    makanan: "text-orange-500",
-    food: "text-orange-500",
-    transport: "text-blue-500",
-    transportasi: "text-blue-500",
-    hiburan: "text-purple-500",
-    tagihan: "text-yellow-500",
-    belanja: "text-sky-500",
-  };
-  const bgMap = {
-    makanan: "bg-orange-50",
-    food: "bg-orange-50",
-    transport: "bg-blue-50",
-    transportasi: "bg-blue-50",
-    hiburan: "bg-purple-50",
-    tagihan: "bg-yellow-50",
-    belanja: "bg-sky-50",
-  };
-
-  const normalized = categoryName.toLowerCase();
-
   return {
     id: budget.id,
     category: categoryName,
@@ -112,8 +107,7 @@ const mapBudget = (budget, budgetProgressByCategoryId = {}) => {
     total: budgetAmount,
     percent: Math.round(percentage),
     icon: getCategoryIconName(categoryName, "expense"),
-    color: colorMap[normalized] || "text-slate-500",
-    bgColor: bgMap[normalized] || "bg-slate-50",
+    bgColor: "bg-slate-50",
     shadowColor: "shadow-slate-100",
     category_id: budget.category_id,
     period: budget.period,
@@ -123,26 +117,23 @@ const mapBudget = (budget, budgetProgressByCategoryId = {}) => {
   };
 };
 
-// Budget suggestion percentages per category (sums to ~1.0)
+// Saran anggaran: 7 kategori sistem, total 100%
 const BUDGET_SUGGESTION_PERCENT = {
-  makanan: 0.15,
-  belanja: 0.15,
-  transportasi: 0.1,
-  hiburan: 0.05,
-  tagihan: 0.2,
-  pendidikan: 0.05,
-  travel: 0.05,
-  "kesehatan dan perawatan diri": 0.1,
-  sosial: 0.05,
-  lainnya: 0.1,
+  makanan: 0.17,
+  belanja: 0.16,
+  tagihan: 0.17,
+  kesehatan: 0.13,
+  transport: 0.12,
+  hiburan: 0.08,
+  lainnya: 0.17,
 };
 
 const getBudgetSuggestions = (income = 0) => {
   const total = toNumber(income);
-  if (total <= 0) return [];
   return Object.keys(BUDGET_SUGGESTION_PERCENT).map((cat) => ({
     category: cat,
-    amount: Math.round(total * BUDGET_SUGGESTION_PERCENT[cat]),
+    percent: BUDGET_SUGGESTION_PERCENT[cat],
+    amount: total > 0 ? Math.round(total * BUDGET_SUGGESTION_PERCENT[cat]) : 0,
   }));
 };
 
@@ -195,7 +186,7 @@ const buildInsights = ({ recommendations = [], budgetProgress = [], transactions
             type: "positive",
             title: "Arus kas positif",
             description: `Saldo bulan ini masih positif sebesar ${formatCurrencyLabel(summary.balance)}.`,
-            action: "Lihat Dashboard",
+            action: null,
           },
         ]
       : [];
@@ -213,6 +204,7 @@ export const AppProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
   const [investments, setInvestments] = useState(null);
+  const [dashboardSummary, setDashboardSummary] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(Boolean(storedSession.token));
   const [isAuthReady, setIsAuthReady] = useState(!storedSession.token);
   const [isAddTxModalOpen, setIsAddTxModalOpen] = useState(false);
@@ -225,6 +217,7 @@ export const AppProvider = ({ children }) => {
     if (!token) {
       setTransactions([]);
       setBudgets([]);
+      setDashboardSummary(null);
       setInsights([]);
       setCategories([]);
       setCustomCategories([]);
@@ -243,7 +236,8 @@ export const AppProvider = ({ children }) => {
 
       const defaultCategories = categoriesResponse?.data?.categories || [];
       const userDefinedCategories = customCategoriesResponse?.data?.categories || [];
-      const dashboardSummary = dashboardResponse?.data || {};
+      const rawDashboardSummary = dashboardResponse?.data || {};
+      const dashboardSummary = enrichDashboardSummary(rawDashboardSummary);
       const rawTransactions = transactionsResponse?.data?.transactions || [];
       const rawBudgets = budgetsResponse?.data?.budgets || [];
       const rawRecommendations = recommendationsResponse?.data?.recommendations || [];
@@ -255,7 +249,7 @@ export const AppProvider = ({ children }) => {
       }, {});
 
       const normalizedTransactions = rawTransactions.map(mapTransaction);
-      const normalizedBudgets = rawBudgets.map((budget) => mapBudget(budget, budgetProgressByCategoryId));
+      const normalizedBudgets = applyBudgetColors(rawBudgets.map((budget) => mapBudget(budget, budgetProgressByCategoryId)));
       const normalizedInsights = buildInsights({
         recommendations: rawRecommendations,
         budgetProgress: dashboardSummary.budget_progress || [],
@@ -279,6 +273,7 @@ export const AppProvider = ({ children }) => {
       setBudgets(normalizedBudgets);
       setInsights(normalizedInsights);
       setInvestments(investmentData);
+      setDashboardSummary(dashboardSummary);
       setHasUnreadNotifications(normalizedInsights.some((item) => item.type === "alert" || item.type === "recommendation"));
       setIsAuthenticated(true);
       setIsAuthReady(true);
@@ -289,7 +284,7 @@ export const AppProvider = ({ children }) => {
         if (autoAdjustBudgets && normalizedBudgets.length === 0 && toNumber(dashboardSummary.total_income) > 0) {
           const suggestions = getBudgetSuggestions(dashboardSummary.total_income);
           for (const s of suggestions) {
-            const match = (defaultCategories || []).find((c) => `${c.name || ""}`.toLowerCase() === `${s.category}`.toLowerCase()) || (userDefinedCategories || []).find((c) => `${c.name || ""}`.toLowerCase() === `${s.category}`.toLowerCase());
+            const match = findCategoryByName(s.category, defaultCategories, userDefinedCategories);
             if (!match || !match.id) continue;
             // Send create/upsert to backend
             try {
@@ -305,7 +300,7 @@ export const AppProvider = ({ children }) => {
 
           // Refresh budgets after applying
           const refreshed = await apiRequest(`/api/budgets?period=${currentPeriod()}`, { token });
-          setBudgets((refreshed?.data?.budgets || []).map((b) => mapBudget(b, {})));
+          setBudgets(applyBudgetColors((refreshed?.data?.budgets || []).map((b) => mapBudget(b, {}))));
         }
       } catch {
         // ignore auto-apply failures
@@ -316,6 +311,7 @@ export const AppProvider = ({ children }) => {
       setUser(EMPTY_USER);
       setTransactions([]);
       setBudgets([]);
+      setDashboardSummary(null);
       setInsights([]);
       setCategories([]);
       setCustomCategories([]);
@@ -348,16 +344,7 @@ export const AppProvider = ({ children }) => {
     setIsAddTxModalOpen(true);
   };
 
-  const resolveCategoryId = (categoryName) => {
-    const normalized = `${categoryName || ""}`.toLowerCase();
-    const defaultCategory = categories.find((category) => `${category.name || ""}`.toLowerCase() === normalized);
-    if (defaultCategory) {
-      return defaultCategory.id;
-    }
-
-    const customCategory = customCategories.find((category) => `${category.name || ""}`.toLowerCase() === normalized);
-    return customCategory?.id || null;
-  };
+  const resolveCategoryId = (categoryName) => resolveCategoryIdFromLists(categoryName, categories, customCategories);
 
   const addTransaction = async (transaction) => {
     if (!authToken) {
@@ -389,6 +376,21 @@ export const AppProvider = ({ children }) => {
 
     return createdTransaction;
   };
+
+  const refreshTransactions = useCallback(async () => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+
+    const response = await apiRequest("/api/transactions", {
+      token: authToken,
+    });
+
+    const rawTransactions = response?.data?.transactions || [];
+    const normalizedTransactions = rawTransactions.map(mapTransaction);
+    setTransactions(normalizedTransactions);
+    return normalizedTransactions;
+  }, [authToken]);
 
   const updateTransaction = async (id, payload) => {
     if (!authToken) {
@@ -492,6 +494,7 @@ export const AppProvider = ({ children }) => {
       setUser(EMPTY_USER);
       setTransactions([]);
       setBudgets([]);
+      setDashboardSummary(null);
       setInsights([]);
       setCategories([]);
       setCustomCategories([]);
@@ -506,9 +509,14 @@ export const AppProvider = ({ children }) => {
       throw new Error("Anda harus masuk terlebih dahulu");
     }
 
-    const categoryId = resolveCategoryId(budgetData.category);
+    const categoryId = budgetData.category_id || resolveCategoryId(budgetData.category);
     if (!categoryId) {
-      throw new Error("Kategori budget tidak ditemukan");
+      const label = budgetData.category ? normalizeCategoryName(budgetData.category) : "kategori";
+      throw new Error(
+        categories.length === 0
+          ? "Kategori sistem belum tersedia. Pastikan backend berjalan dan jalankan seed database (npm run seed di folder backend)."
+          : `Kategori "${label}" tidak ditemukan. Pilih kategori dari daftar yang tersedia.`
+      );
     }
 
     const response = await apiRequest("/api/budgets", {
@@ -520,6 +528,11 @@ export const AppProvider = ({ children }) => {
         period: budgetData.period || currentPeriod(),
       }),
     });
+
+    if (categoryId) {
+      const color = budgetData.color || getNextUnusedBudgetColor(budgets);
+      setBudgetColorForCategory(categoryId, color);
+    }
 
     const createdBudget = response?.data?.budget || response?.data || null;
     if (createdBudget) {
@@ -535,14 +548,44 @@ export const AppProvider = ({ children }) => {
 
   const applyAllBudgetSuggestions = async (income = user.monthlyIncome, period = currentPeriod()) => {
     const suggestions = getBudgetSuggestions(income);
+    const existingCategories = new Set(budgets.map((budget) => normalizeCategoryName(budget.category)));
+
     for (const s of suggestions) {
+      if (existingCategories.has(normalizeCategoryName(s.category))) continue;
       try {
         await addBudget({ category: s.category, total: s.amount, period });
+        existingCategories.add(normalizeCategoryName(s.category));
       } catch {
         // continue
       }
     }
-    // refresh data
+    await bootstrapAppData(authToken);
+  };
+
+  const updateBudget = async (budgetId, amount) => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+
+    await apiRequest(`/api/budgets/${budgetId}`, {
+      method: "PUT",
+      token: authToken,
+      body: JSON.stringify({ amount: Math.abs(toNumber(amount)) }),
+    });
+
+    await bootstrapAppData(authToken);
+  };
+
+  const deleteBudget = async (budgetId) => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+
+    await apiRequest(`/api/budgets/${budgetId}`, {
+      method: "DELETE",
+      token: authToken,
+    });
+
     await bootstrapAppData(authToken);
   };
 
@@ -582,6 +625,7 @@ export const AppProvider = ({ children }) => {
         categories,
         customCategories,
         investments,
+        dashboardSummary,
         isAuthenticated,
         isAuthReady,
         isAddTxModalOpen,
@@ -591,12 +635,16 @@ export const AppProvider = ({ children }) => {
         setGlobalSearchTerm,
         hasUnreadNotifications,
         setHasUnreadNotifications,
+        authToken,
         dashboardMode,
         setDashboardMode,
         addTransaction,
         updateTransaction,
         deleteTransaction,
+        refreshTransactions,
         addBudget,
+        updateBudget,
+        deleteBudget,
         getBudgetSuggestions,
         applyBudgetSuggestion,
         applyAllBudgetSuggestions,
