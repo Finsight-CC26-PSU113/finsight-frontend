@@ -4,20 +4,14 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { useAppContext } from "../context/AppContext";
-import { Building, Banknote, Gem, Sparkles, ArrowRight, TrendingUp, Briefcase, BookOpen } from "lucide-react";
-
-const iconMap = {
-  sbr: Building,
-  rdpu: Banknote,
-  emas: Gem,
-};
+import { Building, Sparkles, ArrowRight, TrendingUp, Briefcase, BookOpen, Layers, Coins, Landmark } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const InvestmentPage = () => {
   const { investments, user } = useAppContext();
+  const navigate = useNavigate();
   const [selectedEdu, setSelectedEdu] = useState(null);
-  const [selectedProduct, setSelectedProduct] = useState(null);
 
-  const investmentProducts = investments?.products || [];
   const educationContent = investments?.education || [];
   const portfolioValue = Number(investments?.portfolio?.value ?? user?.investment_portfolio_value ?? 0);
 
@@ -62,39 +56,20 @@ export const InvestmentPage = () => {
         </motion.div>
       </div>
 
-      {/* 2. Middle Section: Products */}
+      {/* 2. Middle Section: Categories */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900">Produk Investasi Pilihan</h2>
+          <h2 className="text-xl font-bold text-slate-900">Kategori Investasi</h2>
+          <Button variant="outline" onClick={() => navigate("/investments/portfolio")} className="text-sm">
+            Portofolio
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-          {investmentProducts.map((product) => (
-            <Card key={product.id} className={`p-6 flex flex-col h-full border-b-4 ${product.borderColor} hover:shadow-lg transition-shadow`}>
-              <div className="flex justify-between items-start mb-4">
-                <div className={`w-12 h-12 rounded-xl ${product.iconBg} flex items-center justify-center`}>{React.createElement(iconMap[product.id] || Building, { className: `w-6 h-6 ${product.iconColor}` })}</div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${product.badgeColor}`}>{product.badgeText}</span>
-              </div>
-
-              <h3 className="text-lg font-bold text-slate-900 mb-2">{product.title}</h3>
-              <p className="text-slate-500 text-sm mb-6 flex-grow">{product.desc}</p>
-
-              <div className="grid grid-cols-2 gap-4 mb-6 pt-4 border-t border-slate-100">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{product.detail1Label}</p>
-                  <p className="font-bold text-green-600">{product.detail1Value}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{product.detail2Label}</p>
-                  <p className="font-bold text-slate-900">{product.detail2Value}</p>
-                </div>
-              </div>
-
-              <Button variant="outline" fullWidth onClick={() => setSelectedProduct(product)} className="text-blue-600 border-blue-200 hover:bg-blue-50 font-semibold group cursor-pointer">
-                Lihat Detail <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Card>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+          <CategoryCard title="Saham" desc="Pantau harga saham dan performa." icon={TrendingUp} onClick={() => navigate("/investments/stock")} />
+          <CategoryCard title="Reksa Dana" desc="Lihat produk reksa dana berdasarkan profil risiko." icon={Layers} onClick={() => navigate("/investments/mutual_fund")} />
+          <CategoryCard title="Obligasi" desc="SBN/ORI dan instrumen obligasi lainnya." icon={Landmark} onClick={() => navigate("/investments/bond")} />
+          <CategoryCard title="Emas" desc="Harga emas dan tracking gram yang dimiliki." icon={Coins} onClick={() => navigate("/investments/gold")} />
         </div>
       </motion.div>
 
@@ -163,53 +138,38 @@ export const InvestmentPage = () => {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+};
 
-      {/* Product Detail Modal */}
-      <Modal isOpen={selectedProduct !== null} onClose={() => setSelectedProduct(null)} title={selectedProduct?.title || "Detail Produk Investasi"}>
-        <div className="space-y-5">
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-            {selectedProduct && <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${selectedProduct.iconBg}`}>{React.createElement(iconMap[selectedProduct.id] || Building, { className: `w-6 h-6 ${selectedProduct.iconColor}` })}</div>}
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Informasi Instrumen</p>
-              <h4 className="font-bold text-slate-900 text-sm leading-snug">{selectedProduct?.title}</h4>
-            </div>
-          </div>
+const CategoryCard = ({ title, desc, icon: Icon, onClick }) => {
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onClick?.();
+    }
+  };
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Estimasi Imbal Hasil</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Tingkat Risiko</p>
-              <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold mt-0.5 ${selectedProduct?.badgeColor}`}>{selectedProduct?.riskLevel}</span>
-            </div>
-            <div className="bg-slate-50 p-4 rounded-xl">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Min. Pembelian</span>
-              <span className="text-lg font-bold text-slate-900">{selectedProduct?.minPurchase}</span>
-            </div>
-          </div>
-
-          <div>
-            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Deskripsi Produk</h5>
-            <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">{selectedProduct?.fullDesc}</p>
-          </div>
-
-          {selectedProduct?.features && (
-            <div>
-              <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Keunggulan & Fitur Utama</h5>
-              <ul className="space-y-2 text-xs text-slate-600 pl-5 list-disc leading-relaxed">
-                {selectedProduct.features.map((feat, index) => (
-                  <li key={index}>{feat}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="flex justify-end pt-4 border-t border-slate-100 mt-6">
-            <Button onClick={() => setSelectedProduct(null)} className="rounded-xl py-2 px-5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm cursor-pointer">
-              Tutup Detail
-            </Button>
-          </div>
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      className="bg-white rounded-2xl shadow-card border border-slate-100 p-6 hover:shadow-lg hover:border-primary-200 transition-all cursor-pointer text-left w-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-lg font-bold text-slate-900">{title}</div>
+          <div className="text-sm text-slate-500 mt-1">{desc}</div>
         </div>
-      </Modal>
+        <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 shrink-0">
+          <Icon className="w-6 h-6 text-primary-600" />
+        </div>
+      </div>
+      <div className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">
+        Lihat Produk <ArrowRight className="w-4 h-4" />
+      </div>
     </div>
   );
 };

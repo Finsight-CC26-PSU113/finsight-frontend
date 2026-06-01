@@ -433,6 +433,91 @@ export const AppProvider = ({ children }) => {
     await bootstrapAppData(authToken);
   };
 
+  // ---------------------------------------------------------------------------
+  // Investments (catalog + quotes + portfolio)
+  // ---------------------------------------------------------------------------
+
+  const fetchInvestmentProducts = async ({ category, search, sort } = {}) => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (search) params.set("search", search);
+    if (sort) params.set("sort", sort);
+
+    const response = await apiRequest(`/api/investments/products?${params.toString()}`, {
+      token: authToken,
+    });
+
+    return response?.data?.products || [];
+  };
+
+  const fetchInvestmentProductById = async (id) => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+    const response = await apiRequest(`/api/investments/products/${id}`, { token: authToken });
+    return response?.data?.product || null;
+  };
+
+  const fetchInvestmentQuotes = async (symbols = []) => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+    const deduped = Array.from(new Set((symbols || []).map((s) => String(s || "").trim()).filter(Boolean)));
+    if (deduped.length === 0) return [];
+
+    const response = await apiRequest(`/api/investments/quotes?symbols=${encodeURIComponent(deduped.join(","))}`, {
+      token: authToken,
+    });
+
+    return response?.data?.quotes || [];
+  };
+
+  const fetchInvestmentPortfolio = async () => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+    const response = await apiRequest(`/api/investments/portfolio`, { token: authToken });
+    return response?.data?.portfolio || null;
+  };
+
+  const savePortfolioPosition = async (payload) => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+    const response = await apiRequest(`/api/investments/portfolio/positions`, {
+      method: "POST",
+      token: authToken,
+      body: JSON.stringify(payload),
+    });
+    return response?.data?.position || null;
+  };
+
+  const updatePortfolioPosition = async (id, payload) => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+    const response = await apiRequest(`/api/investments/portfolio/positions/${id}`, {
+      method: "PATCH",
+      token: authToken,
+      body: JSON.stringify(payload),
+    });
+    return response?.data?.position || null;
+  };
+
+  const deletePortfolioPosition = async (id) => {
+    if (!authToken) {
+      throw new Error("Anda harus masuk terlebih dahulu");
+    }
+    await apiRequest(`/api/investments/portfolio/positions/${id}`, {
+      method: "DELETE",
+      token: authToken,
+    });
+  };
+
   const login = async (credentials = {}) => {
     const response = await apiRequest("/api/auth/login", {
       method: "POST",
@@ -648,6 +733,13 @@ export const AppProvider = ({ children }) => {
         getBudgetSuggestions,
         applyBudgetSuggestion,
         applyAllBudgetSuggestions,
+        fetchInvestmentProducts,
+        fetchInvestmentProductById,
+        fetchInvestmentQuotes,
+        fetchInvestmentPortfolio,
+        savePortfolioPosition,
+        updatePortfolioPosition,
+        deletePortfolioPosition,
         login,
         register,
         logout,

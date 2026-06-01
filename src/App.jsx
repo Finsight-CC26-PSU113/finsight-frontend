@@ -11,6 +11,9 @@ import { InsightsPage } from "./pages/InsightsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { InvestmentPage } from "./pages/InvestmentPage";
+import { InvestmentsCatalogPage } from "./pages/InvestmentsCatalogPage";
+import { InvestmentPortfolioPage } from "./pages/InvestmentPortfolioPage";
+import { InvestmentProductDetailPage } from "./pages/InvestmentProductDetailPage";
 import { useAppContext } from "./context/AppContext";
 
 // Protected Route wrapper
@@ -47,6 +50,9 @@ function App() {
           <Route path="budget" element={<BudgetPage />} />
           <Route path="insights" element={<InsightsPage />} />
           <Route path="investments" element={<InvestmentPage />} />
+          <Route path="investments/portfolio" element={<InvestmentPortfolioPage />} />
+          <Route path="investments/:category" element={<InvestmentsCatalogPage />} />
+          <Route path="investments/product/:id" element={<InvestmentProductDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
           {/* Upload page removed — scan is available via the Add Transaction button */}
