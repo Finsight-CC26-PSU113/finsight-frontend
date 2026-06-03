@@ -1,23 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { HeroInsight } from "../components/dashboard/HeroInsight";
-import { SummaryCards } from "../components/dashboard/SummaryCards";
-import { SpendingChart } from "../components/dashboard/SpendingChart";
-import { RecentTransactions } from "../components/dashboard/RecentTransactions";
-import { AiRecommendationFeed } from "../components/dashboard/AiRecommendationFeed";
-import { AnomalyDetectionWidget } from "../components/dashboard/AnomalyDetectionWidget";
-import { SavingsOverviewWidget } from "../components/dashboard/SavingsOverviewWidget";
+import { LiteDashboardView } from "../components/dashboard/LiteDashboardView";
+import { ProDashboardView } from "../components/dashboard/ProDashboardView";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
 import { OnboardingSurveyModal } from "../components/onboarding/OnboardingSurveyModal";
+import { useAppContext } from "../context/AppContext";
 import { ShieldCheck, Target, TrendingUp } from "lucide-react";
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
 export const DashboardPage = () => {
+  const { dashboardMode } = useAppContext();
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
-  // Retrieve onboarding results with solid Moderat fallbacks
   const [riskProfile, setRiskProfile] = useState(localStorage.getItem("onboarding_profile") || "Mid Risk (Moderat)");
   const [riskDesc, setRiskDesc] = useState(localStorage.getItem("onboarding_desc") || "Anda cukup toleran terhadap risiko demi pertumbuhan aset. FINSIGHT akan membantu merancang strategi seimbang antara keamanan dan investasi.");
 
@@ -51,10 +47,11 @@ export const DashboardPage = () => {
     setIsResultModalOpen(false);
     localStorage.setItem("show_onboarding_popup", "false");
 
-    // Auto-start driver.js tour after a tiny delay for modal close transition
-    setTimeout(() => {
-      startTour();
-    }, 450);
+    if (dashboardMode === "lite") {
+      setTimeout(() => {
+        startTour();
+      }, 450);
+    }
   };
 
   const startTour = () => {
@@ -136,47 +133,30 @@ export const DashboardPage = () => {
   };
 
   return (
-    <div className="space-y-6 relative">
-      <div id="tour-hero-insight">
-        <HeroInsight />
-      </div>
-
-      <div id="tour-summary-cards">
-        <SummaryCards />
-      </div>
-
-      {/* Main Layout: Two Columns */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Column: Charts & Transactions */}
-        <div className="w-full lg:w-2/3 flex flex-col gap-6">
-          <div id="tour-spending-chart">
-            <SpendingChart />
-          </div>
-          <div id="tour-recent-transactions">
-            <RecentTransactions />
-          </div>
-        </div>
-
-        {/* Right Column: AI Insights, Anomaly, & Goal */}
-        <div className="w-full lg:w-1/3 flex flex-col gap-6">
-          <div id="tour-anomaly-widget">
-            <AnomalyDetectionWidget />
-          </div>
-          <div id="tour-ai-recommendations">
-            <AiRecommendationFeed />
-          </div>
-          <div id="tour-savings-overview">
-            <SavingsOverviewWidget />
-          </div>
-        </div>
-      </div>
+    <>
+      {dashboardMode === "pro" ? <ProDashboardView /> : <LiteDashboardView />}
 
       <OnboardingSurveyModal isOpen={isSurveyModalOpen} onComplete={handleSurveyComplete} />
 
-      {/* Onboarding Result Popup Modal */}
       <Modal isOpen={isResultModalOpen} onClose={handleCloseResultModal} title="Selamat Datang di FINSIGHT! 🎉">
         <div className="space-y-6 text-center">
-          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto ${riskProfile.includes("Low") || riskProfile.includes("Konservatif") ? "text-green-500 bg-green-50" : riskProfile.includes("High") || riskProfile.includes("Agresif") ? "text-orange-500 bg-orange-50" : "text-blue-500 bg-blue-50"}`}>{riskProfile.includes("Low") || riskProfile.includes("Konservatif") ? <ShieldCheck className="w-10 h-10" /> : riskProfile.includes("High") || riskProfile.includes("Agresif") ? <TrendingUp className="w-10 h-10" /> : <Target className="w-10 h-10" />}</div>
+          <div
+            className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto ${
+              riskProfile.includes("Low") || riskProfile.includes("Konservatif")
+                ? "text-green-500 bg-green-50"
+                : riskProfile.includes("High") || riskProfile.includes("Agresif")
+                  ? "text-orange-500 bg-orange-50"
+                  : "text-blue-500 bg-blue-50"
+            }`}
+          >
+            {riskProfile.includes("Low") || riskProfile.includes("Konservatif") ? (
+              <ShieldCheck className="w-10 h-10" />
+            ) : riskProfile.includes("High") || riskProfile.includes("Agresif") ? (
+              <TrendingUp className="w-10 h-10" />
+            ) : (
+              <Target className="w-10 h-10" />
+            )}
+          </div>
 
           <div>
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Profil Risiko Finansial</span>
@@ -191,6 +171,6 @@ export const DashboardPage = () => {
           </div>
         </div>
       </Modal>
-    </div>
+    </>
   );
 };

@@ -247,7 +247,21 @@ export const AppProvider = ({ children }) => {
   const [editTx, setEditTx] = useState(null);
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
-  const [dashboardMode, setDashboardMode] = useState("lite");
+  const DASHBOARD_MODE_KEY = "finsight_dashboard_mode";
+
+  const [dashboardMode, setDashboardModeState] = useState(() => {
+    if (typeof window === "undefined") return "lite";
+    const stored = window.localStorage.getItem(DASHBOARD_MODE_KEY);
+    return stored === "pro" ? "pro" : "lite";
+  });
+
+  const setDashboardMode = (mode) => {
+    const nextMode = mode === "pro" ? "pro" : "lite";
+    setDashboardModeState(nextMode);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(DASHBOARD_MODE_KEY, nextMode);
+    }
+  };
 
   const bootstrapAppData = async (token) => {
     if (!token) {
