@@ -1,11 +1,35 @@
 import { motion } from "framer-motion";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { Sparkles, AlertTriangle, Lightbulb, Target, TrendingUp, ShieldAlert } from "lucide-react";
 
 export const InsightsPage = () => {
   const { insights } = useAppContext();
+  const navigate = useNavigate();
+
+  const handleInsightAction = (insight) => {
+    if (!insight.action) return;
+
+    const actionText = insight.action.toLowerCase();
+    if (actionText.includes("tabungan") || actionText.includes("savings")) {
+      navigate("/savings");
+      return;
+    }
+    if (actionText.includes("anggaran") || actionText.includes("budget")) {
+      navigate("/budget");
+      return;
+    }
+    if (actionText.includes("transaksi")) {
+      navigate("/transactions");
+      return;
+    }
+    if (actionText.includes("rekomendasi")) {
+      navigate("/insights");
+      return;
+    }
+  };
 
   // Categorize insights based on their type
   const alerts = insights.filter((i) => i.type === "alert");
@@ -39,11 +63,6 @@ export const InsightsPage = () => {
           </div>
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Kecerdasan Keuangan Anda</h1>
           <p className="text-primary-100 max-w-xl">Kami telah menganalisis pola pengeluaran, anggaran, dan transaksi terbaru Anda untuk memberikan rekomendasi personal.</p>
-        </div>
-        <div className="relative z-10 shrink-0 mt-4 md:mt-0">
-          <Button variant="secondary" className="font-semibold text-ai-dark shadow-lg w-full md:w-auto">
-            Buat Laporan Baru
-          </Button>
         </div>
       </div>
 
@@ -87,7 +106,13 @@ export const InsightsPage = () => {
                       <h3 className="text-lg font-bold text-slate-900">{alert.title}</h3>
                       <p className="text-slate-600 mt-1 mb-4">{alert.description}</p>
                       {alert.action && (
-                        <Button variant="outline" size="sm" className="border-yellow-200 hover:bg-yellow-50 hover:text-yellow-700 w-full sm:w-auto">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="border-yellow-200 hover:bg-yellow-50 hover:text-yellow-700 w-full sm:w-auto"
+                          onClick={() => handleInsightAction(alert)}
+                        >
                           {alert.action}
                         </Button>
                       )}
@@ -136,7 +161,13 @@ export const InsightsPage = () => {
                   </div>
                   <p className="text-sm text-slate-600 mb-4">{rec.description}</p>
                   {rec.action && (
-                    <Button variant="primary" size="sm" className="w-full bg-ai hover:bg-ai-dark text-white">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      className="w-full bg-ai hover:bg-ai-dark text-white"
+                      onClick={() => handleInsightAction(rec)}
+                    >
                       {rec.action}
                     </Button>
                   )}

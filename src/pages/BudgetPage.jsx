@@ -8,6 +8,7 @@ import { AlertTriangle, Plus, Target, Wallet, Save, Edit2, Trash2, Car, Utensils
 import { PieChart as RechartsPieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { buildExpenseCategoryOptions, formatCategoryLabel, normalizeCategoryName } from "../utils/categoryUtils";
 import { getNextUnusedBudgetColor } from "../utils/budgetColors";
+import { formatRupiahInput, parseRupiahInput } from "../utils/currencyInput";
 
 export const BudgetPage = () => {
   const { budgets, transactions, addBudget, updateBudget, deleteBudget, getBudgetSuggestions, applyBudgetSuggestion, applyAllBudgetSuggestions, user, categories, customCategories, dashboardSummary } = useAppContext();
@@ -56,10 +57,16 @@ export const BudgetPage = () => {
         return;
       }
 
+      const totalAmount = parseRupiahInput(newBudget.total);
+      if (totalAmount <= 0) {
+        window.alert("Nominal anggaran harus lebih dari 0");
+        return;
+      }
+
       await addBudget({
         category_id: selectedCategory.id,
         category: selectedCategory.name,
-        total: parseFloat(newBudget.total),
+        total: totalAmount,
         color: getNextUnusedBudgetColor(budgets),
       });
 
@@ -72,7 +79,7 @@ export const BudgetPage = () => {
 
   const handleEditBudget = (budget) => {
     setEditingBudget(budget);
-    setEditAmount(budget.total.toString());
+    setEditAmount(formatRupiahInput(budget.total));
     setIsEditModalOpen(true);
   };
 
@@ -81,7 +88,12 @@ export const BudgetPage = () => {
     if (!editAmount || !editingBudget) return;
 
     try {
-      await updateBudget(editingBudget.id, parseFloat(editAmount));
+      const nextAmount = parseRupiahInput(editAmount);
+      if (nextAmount <= 0) {
+        window.alert("Nominal anggaran harus lebih dari 0");
+        return;
+      }
+      await updateBudget(editingBudget.id, nextAmount);
       setIsEditModalOpen(false);
       setEditingBudget(null);
       setEditAmount("");
@@ -228,7 +240,7 @@ export const BudgetPage = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Batas Bulanan</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">Rp</span>
-              <input type="number" required min="1" value={newBudget.total} onChange={(e) => setNewBudget({ ...newBudget, total: e.target.value })} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" placeholder="0" />
+              <input type="text" inputMode="numeric" required value={newBudget.total} onChange={(e) => setNewBudget({ ...newBudget, total: formatRupiahInput(e.target.value) })} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" placeholder="0" />
             </div>
           </div>
           <Button type="submit" fullWidth className="mt-4 flex items-center justify-center gap-2">
@@ -249,7 +261,7 @@ export const BudgetPage = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">Batas Bulanan</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">Rp</span>
-              <input type="number" required min="1" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" />
+              <input type="text" inputMode="numeric" required value={editAmount} onChange={(e) => setEditAmount(formatRupiahInput(e.target.value))} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" />
             </div>
           </div>
           <div className="flex gap-3 justify-end">

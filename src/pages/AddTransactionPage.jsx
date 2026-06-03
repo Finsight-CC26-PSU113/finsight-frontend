@@ -5,6 +5,7 @@ import { Button } from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { ArrowLeft, Save, Sparkles } from "lucide-react";
+import { formatRupiahInput, parseRupiahInput } from "../utils/currencyInput";
 
 export const AddTransactionPage = () => {
   const navigate = useNavigate();
@@ -26,9 +27,10 @@ export const AddTransactionPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const nextValue = name === "amount" ? formatRupiahInput(value) : value;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: nextValue,
     }));
   };
 
@@ -37,7 +39,12 @@ export const AddTransactionPage = () => {
 
     // Auto simulate AI category detection if title is empty
     const finalTitle = formData.title || `Transaksi ${formData.category}`;
-    const amountVal = parseFloat(formData.amount);
+    const amountVal = parseRupiahInput(formData.amount);
+
+    if (amountVal <= 0) {
+      window.alert("Nominal harus lebih dari 0");
+      return;
+    }
 
     const newTx = {
       title: finalTitle,
@@ -88,7 +95,7 @@ export const AddTransactionPage = () => {
               <label className="block text-sm font-medium text-slate-700 mb-2">Jumlah</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg font-medium">Rp</span>
-                <input type="number" name="amount" required min="0" value={formData.amount} onChange={handleChange} className="w-full pl-12 pr-4 py-3 text-lg font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all" placeholder="0" />
+                <input type="text" inputMode="numeric" name="amount" required value={formData.amount} onChange={handleChange} className="w-full pl-12 pr-4 py-3 text-lg font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all" placeholder="0" />
               </div>
             </div>
 

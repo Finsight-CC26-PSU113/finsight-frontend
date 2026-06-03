@@ -17,6 +17,7 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
+import { formatRupiahInput, parseRupiahInput } from "../utils/currencyInput";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("id-ID", {
@@ -67,9 +68,14 @@ export const SavingsPage = () => {
 
     setSubmitting(true);
     try {
+      const targetAmount = parseRupiahInput(newGoal.target_amount);
+      if (targetAmount <= 0) {
+        window.alert("Target tabungan harus lebih dari 0");
+        return;
+      }
       await createSavingsGoal({
         name: newGoal.name,
-        target_amount: parseFloat(newGoal.target_amount),
+        target_amount: targetAmount,
         deadline: newGoal.deadline || null,
       });
       setIsCreateOpen(false);
@@ -88,7 +94,11 @@ export const SavingsPage = () => {
 
     setSubmitting(true);
     try {
-      const amount = parseFloat(transferAmount);
+      const amount = parseRupiahInput(transferAmount);
+      if (amount <= 0) {
+        window.alert("Nominal harus lebih dari 0");
+        return;
+      }
       if (transferModal.mode === "deposit") {
         await depositToSavingsGoal(transferModal.goal.id, amount);
       } else {
@@ -231,11 +241,11 @@ export const SavingsPage = () => {
           <div>
             <label className="text-sm font-medium text-slate-700">Target Tabungan (Rp)</label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               required
-              min="1"
               value={newGoal.target_amount}
-              onChange={(e) => setNewGoal((p) => ({ ...p, target_amount: e.target.value }))}
+              onChange={(e) => setNewGoal((p) => ({ ...p, target_amount: formatRupiahInput(e.target.value) }))}
               placeholder="5000000"
               className="mt-1 w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-100"
             />
@@ -270,11 +280,11 @@ export const SavingsPage = () => {
             <div>
               <label className="text-sm font-medium text-slate-700">Nominal (Rp)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 required
-                min="1"
                 value={transferAmount}
-                onChange={(e) => setTransferAmount(e.target.value)}
+                onChange={(e) => setTransferAmount(formatRupiahInput(e.target.value))}
                 className="mt-1 w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-100"
               />
             </div>
