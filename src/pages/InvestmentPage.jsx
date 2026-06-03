@@ -84,9 +84,6 @@ export const InvestmentPage = () => {
               <h3 className="text-lg font-bold text-slate-900 mb-2">Rangkuman AI untuk Kamu</h3>
               <p className="text-slate-600 text-sm leading-relaxed mb-4 sm:mb-0">Berdasarkan nilai portofolio yang tersimpan, kami bisa menyesuaikan rekomendasi dan edukasi investasi supaya tidak lagi bergantung pada angka dummy.</p>
             </div>
-            <div className="shrink-0 w-full sm:w-auto">
-              <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">Detail Analisis</Button>
-            </div>
           </div>
         </motion.div>
 

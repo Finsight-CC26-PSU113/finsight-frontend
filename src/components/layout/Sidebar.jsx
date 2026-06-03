@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Receipt, PieChart, Sparkles, Settings, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Receipt, PieChart, Sparkles, Settings, ChevronLeft, ChevronRight, TrendingUp, PiggyBank } from "lucide-react";
 
 export const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
@@ -7,6 +7,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     { name: "Beranda", path: "/", icon: LayoutDashboard },
     { name: "Transaksi", path: "/transactions", icon: Receipt },
     { name: "Anggaran", path: "/budget", icon: PieChart },
+    { name: "Tabungan", path: "/savings", icon: PiggyBank },
     { name: "Wawasan AI", path: "/insights", icon: Sparkles },
     { name: "Investasi", path: "/investments", icon: TrendingUp },
   ];

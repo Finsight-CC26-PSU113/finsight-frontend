@@ -3,6 +3,7 @@ import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { useAppContext } from "../../context/AppContext";
 import { Save, Sparkles } from "lucide-react";
+import { formatRupiahInput, parseRupiahInput } from "../../utils/currencyInput";
 
 export const AddTransactionModal = ({ isOpen, onClose }) => {
   const { addTransaction, editTx, updateTransaction, categories, customCategories } = useAppContext();
@@ -21,7 +22,7 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
       if (editTx) {
         setFormData({
           title: editTx.title || "",
-          amount: Math.abs(editTx.amount) || "",
+          amount: formatRupiahInput(Math.abs(editTx.amount)),
           category: editTx.category || "",
           type: editTx.type || "expense",
           date: editTx.date || new Date().toISOString().split("T")[0],
@@ -47,9 +48,10 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const nextValue = name === "amount" ? formatRupiahInput(value) : value;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: nextValue,
     }));
   };
 
@@ -62,7 +64,12 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    const amountVal = parseFloat(formData.amount);
+    const amountVal = parseRupiahInput(formData.amount);
+
+    if (amountVal <= 0) {
+      alert("Nominal harus lebih dari 0");
+      return;
+    }
 
     const txPayload = {
       title: formData.title,
@@ -112,7 +119,7 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">Rp</span>
-              <input type="number" name="amount" required min="1" value={formData.amount} onChange={handleChange} className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all font-semibold" placeholder="0" />
+              <input type="text" inputMode="numeric" name="amount" required value={formData.amount} onChange={handleChange} className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all font-semibold" placeholder="0" />
             </div>
           </div>
 

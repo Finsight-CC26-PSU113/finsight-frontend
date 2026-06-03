@@ -1,4 +1,4 @@
-import { BookOpen, Car, Coffee, Heart, HelpCircle, Plane, ShoppingBag, Tv, Wallet, Zap } from "lucide-react";
+import { BookOpen, Car, Coffee, Heart, HelpCircle, PiggyBank, Plane, ShoppingBag, Tv, Wallet, Zap } from "lucide-react";
 
 const allowedReceiptMimeTypes = new Set(["image/png", "image/jpeg", "image/jpg"]);
 
@@ -178,6 +178,13 @@ export const getCategoryStyles = (category = "") => {
         label: "Kesehatan & Perawatan",
         iconBg: "bg-red-100 text-red-600",
         icon: Heart,
+      };
+    case "tabungan":
+      return {
+        bg: "bg-sky-50 text-sky-600 border-sky-100",
+        label: "Tabungan",
+        iconBg: "bg-sky-100 text-sky-600",
+        icon: PiggyBank,
       };
     default:
       return {

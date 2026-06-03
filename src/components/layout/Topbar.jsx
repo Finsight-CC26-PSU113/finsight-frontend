@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Bell, Search, AlertTriangle, Sparkles, CheckCircle2, Menu, Settings, TrendingUp, UserCircle } from "lucide-react";
+import { Bell, Search, AlertTriangle, Sparkles, CheckCircle2, Menu, Settings, TrendingUp, UserCircle, PiggyBank } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Modal } from "../ui/Modal";
@@ -56,7 +56,27 @@ export const Topbar = () => {
           <h1 className="text-xl font-semibold text-slate-900">
             {greeting}, {user.name} 👋
           </h1>
-          <p className="text-sm text-slate-500">Berikut ini ringkasan keuangan Anda.</p>
+          <p className="text-sm text-slate-500">
+            {location.pathname === "/transactions"
+              ? dashboardMode === "pro"
+                ? "Analisis transaksi mendalam dengan grafik dan filter lanjutan."
+                : "Kelola dan lacak semua transaksi keuangan Anda."
+              : location.pathname === "/budget"
+                ? dashboardMode === "pro"
+                  ? "Analisis anggaran mendalam: budget vs realisasi, prediksi, dan rekomendasi AI."
+                  : "Pantau batas pengeluaran dan tujuan anggaran Anda."
+                : location.pathname === "/savings"
+                  ? dashboardMode === "pro"
+                    ? "Analisis tabungan mendalam: progress target, prediksi, dan strategi menabung."
+                    : "Kelola target tabungan dan alokasikan dana dari saldo utama."
+                  : location.pathname === "/insights"
+                    ? dashboardMode === "pro"
+                      ? "Wawasan AI mendalam: health score, prediksi, anomali, dan prioritas keuangan."
+                      : "Rekomendasi personal dari analisis pola keuangan Anda."
+                    : dashboardMode === "pro"
+                  ? "Dasbor analitik lanjutan untuk monitoring keuangan mendalam."
+                  : "Berikut ini ringkasan keuangan Anda."}
+          </p>
         </div>
 
         <div className="relative flex-1 md:flex-none">
@@ -68,10 +88,24 @@ export const Topbar = () => {
       {/* Right: Lite/Pro + bell + avatar */}
       <div className="flex items-center gap-2 md:gap-3 shrink-0">
         <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-xs font-bold">
-          <button onClick={() => setDashboardMode("lite")} className={`px-3 py-1 rounded-full transition-all duration-200 ${dashboardMode === "lite" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
+          <button
+            type="button"
+            onClick={() => {
+              setDashboardMode("lite");
+              if (location.pathname !== "/") navigate("/");
+            }}
+            className={`px-3 py-1 rounded-full transition-all duration-200 ${dashboardMode === "lite" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+          >
             Lite
           </button>
-          <button onClick={() => setDashboardMode("pro")} className={`px-3 py-1 rounded-full transition-all duration-200 ${dashboardMode === "pro" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
+          <button
+            type="button"
+            onClick={() => {
+              setDashboardMode("pro");
+              if (location.pathname !== "/") navigate("/");
+            }}
+            className={`px-3 py-1 rounded-full transition-all duration-200 ${dashboardMode === "pro" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+          >
             Pro
           </button>
         </div>
@@ -117,6 +151,43 @@ export const Topbar = () => {
       {/* Mobile menu (hamburger) */}
       <Modal isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} title="Menu">
         <div className="space-y-2">
+          <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-xs font-bold mb-2">
+            <button
+              type="button"
+              onClick={() => {
+                setDashboardMode("lite");
+                setIsMobileMenuOpen(false);
+                navigate("/");
+              }}
+              className={`flex-1 px-3 py-1.5 rounded-full ${dashboardMode === "lite" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400"}`}
+            >
+              Lite
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDashboardMode("pro");
+                setIsMobileMenuOpen(false);
+                navigate("/");
+              }}
+              className={`flex-1 px-3 py-1.5 rounded-full ${dashboardMode === "pro" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400"}`}
+            >
+              Pro
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              navigate("/savings");
+            }}
+            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+          >
+            <PiggyBank className="w-5 h-5 text-slate-500" />
+            <span className="font-medium text-slate-900">Tabungan</span>
+          </button>
+
           <button
             type="button"
             onClick={() => {
