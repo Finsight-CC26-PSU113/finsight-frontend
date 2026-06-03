@@ -73,7 +73,11 @@ export const Topbar = () => {
                     ? dashboardMode === "pro"
                       ? "Wawasan AI mendalam: health score, prediksi, anomali, dan prioritas keuangan."
                       : "Rekomendasi personal dari analisis pola keuangan Anda."
-                    : dashboardMode === "pro"
+                    : location.pathname === "/investments"
+                      ? dashboardMode === "pro"
+                        ? "Analisis portofolio mendalam: alokasi, return, simulasi, dan rekomendasi instrumen."
+                        : "Kembangkan aset dan jelajahi produk investasi."
+                      : dashboardMode === "pro"
                   ? "Dasbor analitik lanjutan untuk monitoring keuangan mendalam."
                   : "Berikut ini ringkasan keuangan Anda."}
           </p>
