@@ -4,6 +4,13 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck, Target, TrendingUp, CheckCircle2, Sparkles } from "lucide-react";
+import { useAppContext } from "../context/AppContext";
+
+const scoreToRiskLevel = (score) => {
+  if (score <= 13) return "low";
+  if (score <= 19) return "medium";
+  return "high";
+};
 
 const riskQuestions = [
   {
@@ -74,6 +81,7 @@ const riskQuestions = [
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
+  const { saveRiskProfile } = useAppContext();
 
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({});
@@ -92,6 +100,14 @@ export const OnboardingPage = () => {
     localStorage.setItem("onboarding_desc", riskDesc);
     localStorage.setItem("show_onboarding_popup", "true");
     localStorage.removeItem("needs_onboarding_survey");
+
+    // Persist to backend (non-blocking — onboarding still completes if offline).
+    saveRiskProfile({
+      score: totalScore,
+      risk_level: scoreToRiskLevel(totalScore),
+      answers,
+    }).catch(() => {});
+
     navigate("/");
   };
 

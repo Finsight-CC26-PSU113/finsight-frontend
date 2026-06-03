@@ -844,6 +844,30 @@ export const AppProvider = ({ children }) => {
     return updatedUser;
   };
 
+  // ---------------------------------------------------------------------------
+  // Risk profile (onboarding questionnaire)
+  // ---------------------------------------------------------------------------
+
+  const saveRiskProfile = async ({ score, risk_level, answers }) => {
+    const token = authToken || getStoredAuthSession().token;
+    if (!token) throw new Error("Anda harus masuk terlebih dahulu");
+
+    const response = await apiRequest("/api/risk-profile", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ score, risk_level, answers }),
+    });
+    return response?.data?.profile || null;
+  };
+
+  const fetchRiskProfile = async () => {
+    const token = authToken || getStoredAuthSession().token;
+    if (!token) throw new Error("Anda harus masuk terlebih dahulu");
+
+    const response = await apiRequest("/api/risk-profile", { token });
+    return response?.data?.profile || null;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -899,6 +923,8 @@ export const AppProvider = ({ children }) => {
         register,
         logout,
         updateProfile,
+        saveRiskProfile,
+        fetchRiskProfile,
         editTx,
         openEditTxModal,
       }}
