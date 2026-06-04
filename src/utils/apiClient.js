@@ -58,6 +58,7 @@ export const apiRequest = async (path, { token, headers, ...options } = {}) => {
     headers: {
       ...(isFormDataBody ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      "ngrok-skip-browser-warning": "69420",
       ...headers,
     },
   });
