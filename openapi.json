@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000",
+      "url": "https://34ee-2001-448a-1022-4062-54a1-8c4d-2852-2b3.ngrok-free.app",
       "description": "Local Development"
     }
   ],
