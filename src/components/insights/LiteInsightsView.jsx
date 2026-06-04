@@ -1,18 +1,10 @@
 import { motion } from "framer-motion";
 import { Card } from "../ui/Card";
-import { Button } from "../ui/Button";
-import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
-import { navigateFromInsightAction } from "../../utils/insightNavigation";
 import { Sparkles, AlertTriangle, Lightbulb, Target, TrendingUp, ShieldAlert } from "lucide-react";
 
 export const LiteInsightsView = () => {
   const { insights } = useAppContext();
-  const navigate = useNavigate();
-
-  const handleInsightAction = (insight) => {
-    navigateFromInsightAction(insight, navigate);
-  };
 
   // Categorize insights based on their type
   const alerts = insights.filter((i) => i.type === "alert");
@@ -87,18 +79,7 @@ export const LiteInsightsView = () => {
                     </div>
                     <div className="flex-1">
                       <h3 className="text-lg font-bold text-slate-900">{alert.title}</h3>
-                      <p className="text-slate-600 mt-1 mb-4">{alert.description}</p>
-                      {alert.action && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="border-yellow-200 hover:bg-yellow-50 hover:text-yellow-700 w-full sm:w-auto"
-                          onClick={() => handleInsightAction(alert)}
-                        >
-                          {alert.action}
-                        </Button>
-                      )}
+                      <p className="text-slate-600 mt-1">{alert.description}</p>
                     </div>
                   </div>
                 </Card>
@@ -142,18 +123,7 @@ export const LiteInsightsView = () => {
                     <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">{getIcon(rec.type)}</div>
                     <h3 className="font-bold text-slate-900">{rec.title}</h3>
                   </div>
-                  <p className="text-sm text-slate-600 mb-4">{rec.description}</p>
-                  {rec.action && (
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      className="w-full bg-ai hover:bg-ai-dark text-white"
-                      onClick={() => handleInsightAction(rec)}
-                    >
-                      {rec.action}
-                    </Button>
-                  )}
+                  <p className="text-sm text-slate-600">{rec.description}</p>
                 </Card>
               </motion.div>
             ))}

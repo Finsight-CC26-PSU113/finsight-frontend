@@ -1,7 +1,5 @@
 import React from "react";
 import { Card } from "../ui/Card";
-import { Button } from "../ui/Button";
-import { Link } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
 import { motion } from "framer-motion";
 import { Sparkles, AlertTriangle, Lightbulb, Target } from "lucide-react";
@@ -32,15 +30,7 @@ export const AiRecommendationFeed = () => {
       {feedInsights.length === 0 ? (
         <Card className="border-dashed border-slate-200 bg-slate-50/80">
           <p className="text-sm text-slate-700 mb-2">Hai! Saat ini belum ada insight AI yang tersedia untuk akunmu.</p>
-          <p className="text-sm text-slate-500 mb-4">Tambah beberapa transaksi atau sinkronkan akunmu supaya FINSIGHT dapat menganalisis aktivitas dan memberikan rekomendasi khusus.</p>
-          <div className="flex items-center gap-2">
-            <Link to="/transactions">
-              <Button size="sm" variant="primary">Tambahkan Transaksi</Button>
-            </Link>
-            <Link to="/investments">
-              <Button size="sm" variant="ghost">Lihat Investasi</Button>
-            </Link>
-          </div>
+          <p className="text-sm text-slate-500">Tambah beberapa transaksi atau sinkronkan akunmu supaya FINSIGHT dapat menganalisis aktivitas dan memberikan rekomendasi khusus.</p>
         </Card>
       ) : (
         feedInsights.map((insight, index) => (
@@ -52,12 +42,7 @@ export const AiRecommendationFeed = () => {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-slate-900 group-hover:text-ai transition-colors">{insight.title}</h4>
-                  <p className="text-sm text-slate-500 mt-1 mb-3 leading-relaxed">{insight.description}</p>
-                  {insight.action && (
-                    <Button variant="outline" size="sm" className="text-xs">
-                      {insight.action}
-                    </Button>
-                  )}
+                  <p className="text-sm text-slate-500 mt-1 leading-relaxed">{insight.description}</p>
                 </div>
               </div>
             </Card>

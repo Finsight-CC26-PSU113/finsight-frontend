@@ -15,7 +15,7 @@ const resolveAvatarUrl = (value) => {
 };
 
 export const Topbar = () => {
-  const { user, insights, hasUnreadNotifications, setHasUnreadNotifications, globalSearchTerm, setGlobalSearchTerm, dashboardMode, setDashboardMode } = useAppContext();
+  const { user, insights, hasUnreadNotifications, setHasUnreadNotifications, globalSearchTerm, setGlobalSearchTerm } = useAppContext();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,28 +58,16 @@ export const Topbar = () => {
           </h1>
           <p className="text-sm text-slate-500">
             {location.pathname === "/transactions"
-              ? dashboardMode === "pro"
-                ? "Analisis transaksi mendalam dengan grafik dan filter lanjutan."
-                : "Kelola dan lacak semua transaksi keuangan Anda."
+              ? "Kelola dan lacak semua transaksi keuangan Anda."
               : location.pathname === "/budget"
-                ? dashboardMode === "pro"
-                  ? "Analisis anggaran mendalam: budget vs realisasi, prediksi, dan rekomendasi AI."
-                  : "Pantau batas pengeluaran dan tujuan anggaran Anda."
+                ? "Pantau batas pengeluaran dan tujuan anggaran Anda."
                 : location.pathname === "/savings"
-                  ? dashboardMode === "pro"
-                    ? "Analisis tabungan mendalam: progress target, prediksi, dan strategi menabung."
-                    : "Kelola target tabungan dan alokasikan dana dari saldo utama."
+                  ? "Kelola target tabungan dan alokasikan dana dari saldo utama."
                   : location.pathname === "/insights"
-                    ? dashboardMode === "pro"
-                      ? "Wawasan AI mendalam: health score, prediksi, anomali, dan prioritas keuangan."
-                      : "Rekomendasi personal dari analisis pola keuangan Anda."
+                    ? "Rekomendasi personal dari analisis pola keuangan Anda."
                     : location.pathname === "/investments"
-                      ? dashboardMode === "pro"
-                        ? "Analisis portofolio mendalam: alokasi, return, simulasi, dan rekomendasi instrumen."
-                        : "Kembangkan aset dan jelajahi produk investasi."
-                      : dashboardMode === "pro"
-                  ? "Dasbor analitik lanjutan untuk monitoring keuangan mendalam."
-                  : "Berikut ini ringkasan keuangan Anda."}
+                      ? "Kembangkan aset dan jelajahi produk investasi."
+                      : "Berikut ini ringkasan keuangan Anda."}
           </p>
         </div>
 
@@ -89,31 +77,8 @@ export const Topbar = () => {
         </div>
       </div>
 
-      {/* Right: Lite/Pro + bell + avatar */}
+      {/* Right: bell + avatar */}
       <div className="flex items-center gap-2 md:gap-3 shrink-0">
-        <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-xs font-bold">
-          <button
-            type="button"
-            onClick={() => {
-              setDashboardMode("lite");
-              if (location.pathname !== "/") navigate("/");
-            }}
-            className={`px-3 py-1 rounded-full transition-all duration-200 ${dashboardMode === "lite" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
-          >
-            Lite
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setDashboardMode("pro");
-              if (location.pathname !== "/") navigate("/");
-            }}
-            className={`px-3 py-1 rounded-full transition-all duration-200 ${dashboardMode === "pro" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
-          >
-            Pro
-          </button>
-        </div>
-
         <button onClick={handleOpenNotifications} className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors cursor-pointer">
           <Bell className="w-5 h-5" />
           {hasUnreadNotifications && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>}
@@ -143,7 +108,6 @@ export const Topbar = () => {
                 <div className="flex-1 space-y-1">
                   <h4 className="text-sm font-bold text-slate-900">{notif.title}</h4>
                   <p className="text-xs text-slate-600 leading-relaxed">{notif.description}</p>
-                  {notif.action && <button className={`text-xs font-semibold mt-2 hover:underline block ${isAlert ? "text-red-600" : isRec ? "text-blue-600" : "text-green-600"}`}>{notif.action} &rarr;</button>}
                 </div>
               </div>
             );
@@ -155,31 +119,6 @@ export const Topbar = () => {
       {/* Mobile menu (hamburger) */}
       <Modal isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} title="Menu">
         <div className="space-y-2">
-          <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-xs font-bold mb-2">
-            <button
-              type="button"
-              onClick={() => {
-                setDashboardMode("lite");
-                setIsMobileMenuOpen(false);
-                navigate("/");
-              }}
-              className={`flex-1 px-3 py-1.5 rounded-full ${dashboardMode === "lite" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400"}`}
-            >
-              Lite
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDashboardMode("pro");
-                setIsMobileMenuOpen(false);
-                navigate("/");
-              }}
-              className={`flex-1 px-3 py-1.5 rounded-full ${dashboardMode === "pro" ? "bg-white text-primary-600 shadow-sm" : "text-slate-400"}`}
-            >
-              Pro
-            </button>
-          </div>
-
           <button
             type="button"
             onClick={() => {

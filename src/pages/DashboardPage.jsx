@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { LiteDashboardView } from "../components/dashboard/LiteDashboardView";
-import { ProDashboardView } from "../components/dashboard/ProDashboardView";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
 import { OnboardingSurveyModal } from "../components/onboarding/OnboardingSurveyModal";
@@ -10,7 +9,7 @@ import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
 export const DashboardPage = () => {
-  const { dashboardMode } = useAppContext();
+  const { user } = useAppContext();
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
@@ -46,12 +45,7 @@ export const DashboardPage = () => {
   const handleCloseResultModal = () => {
     setIsResultModalOpen(false);
     localStorage.setItem("show_onboarding_popup", "false");
-
-    if (dashboardMode === "lite") {
-      setTimeout(() => {
-        startTour();
-      }, 450);
-    }
+    setTimeout(() => startTour(), 450);
   };
 
   const startTour = () => {
@@ -134,7 +128,7 @@ export const DashboardPage = () => {
 
   return (
     <>
-      {dashboardMode === "pro" ? <ProDashboardView /> : <LiteDashboardView />}
+      <LiteDashboardView />
 
       <OnboardingSurveyModal isOpen={isSurveyModalOpen} onComplete={handleSurveyComplete} />
 
