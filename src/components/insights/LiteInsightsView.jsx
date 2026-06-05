@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Card } from "../ui/Card";
 import { useAppContext } from "../../context/AppContext";
 import { Sparkles, AlertTriangle, Lightbulb, Target, TrendingUp, ShieldAlert } from "lucide-react";
+import { AiSpendingSummary } from "./AiSpendingSummary";
 
 export const LiteInsightsView = () => {
   const { insights } = useAppContext();
@@ -40,6 +41,8 @@ export const LiteInsightsView = () => {
           <p className="text-primary-100 max-w-xl">Kami telah menganalisis pola pengeluaran, anggaran, dan transaksi terbaru Anda untuk memberikan rekomendasi personal.</p>
         </div>
       </div>
+
+      <AiSpendingSummary />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Left Column: Alerts & Anomalies */}
