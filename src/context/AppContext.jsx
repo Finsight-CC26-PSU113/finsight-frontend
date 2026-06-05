@@ -174,6 +174,7 @@ const buildInsights = ({
     title: recommendation.type || "Rekomendasi AI",
     description: recommendation.message,
     action: recommendation.status === "active" ? "Tinjau Rekomendasi" : "Lihat Detail",
+    link: "/insights",
   }));
 
   const budgetInsights = budgetProgress
@@ -185,6 +186,7 @@ const buildInsights = ({
       title: `${item.name || "Kategori"} mendekati batas`,
       description: `Pengeluaran sudah mencapai ${Math.round(toNumber(item.percentage))}% dari budget bulan ini (${formatCurrencyLabel(item.spent_amount)} dari ${formatCurrencyLabel(item.budget_amount)}).`,
       action: "Tinjau Anggaran",
+      link: "/budget",
     }));
 
   const anomalyTransaction = [...transactions].find((transaction) => transaction.is_anomaly);
@@ -196,6 +198,7 @@ const buildInsights = ({
           title: "Deteksi Anomali",
           description: `${anomalyTransaction.title} terdeteksi sebagai transaksi tidak biasa di kategori ${anomalyTransaction.category}.`,
           action: "Tinjau Transaksi",
+          link: "/transactions",
         },
       ]
     : [];
@@ -209,6 +212,7 @@ const buildInsights = ({
             title: "Arus kas positif",
             description: `Saldo bulan ini masih positif sebesar ${formatCurrencyLabel(summary.balance)}.`,
             action: null,
+            link: null,
           },
         ]
       : [];
@@ -219,6 +223,7 @@ const buildInsights = ({
     title: insight.title,
     description: insight.description,
     action: insight.action || "Buka Tabungan",
+    link: "/savings",
   }));
 
   return [...anomalyInsights, ...savingsInsightItems, ...budgetInsights, ...recommendationInsights, ...positiveInsight].map(
@@ -445,6 +450,8 @@ export const AppProvider = ({ children }) => {
       throw new Error("Anda harus masuk terlebih dahulu");
     }
 
+    const categoryId = payload.type === "income" ? null : (payload.category_id || resolveCategoryId(payload.category));
+
     const response = await apiRequest(`/api/transactions/${id}`, {
       method: "PUT",
       token: authToken,
@@ -454,7 +461,7 @@ export const AppProvider = ({ children }) => {
         payment_method: payload.paymentMethod || "cash",
         transaction_date: payload.date || formatDateValue(),
         description: payload.title,
-        ...(payload.category_id ? { category_id: payload.category_id } : {}),
+        ...(categoryId ? { category_id: categoryId } : {}),
       }),
     });
 
@@ -844,6 +851,30 @@ export const AppProvider = ({ children }) => {
     return updatedUser;
   };
 
+  // ---------------------------------------------------------------------------
+  // Risk profile (onboarding questionnaire)
+  // ---------------------------------------------------------------------------
+
+  const saveRiskProfile = async ({ score, risk_level, answers }) => {
+    const token = authToken || getStoredAuthSession().token;
+    if (!token) throw new Error("Anda harus masuk terlebih dahulu");
+
+    const response = await apiRequest("/api/risk-profile", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ score, risk_level, answers }),
+    });
+    return response?.data?.profile || null;
+  };
+
+  const fetchRiskProfile = async () => {
+    const token = authToken || getStoredAuthSession().token;
+    if (!token) throw new Error("Anda harus masuk terlebih dahulu");
+
+    const response = await apiRequest("/api/risk-profile", { token });
+    return response?.data?.profile || null;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -899,6 +930,8 @@ export const AppProvider = ({ children }) => {
         register,
         logout,
         updateProfile,
+        saveRiskProfile,
+        fetchRiskProfile,
         editTx,
         openEditTxModal,
       }}

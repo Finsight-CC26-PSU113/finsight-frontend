@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Badge } from '../ui/Badge';
 import { useAppContext } from '../../context/AppContext';
 import { motion } from 'framer-motion';
 import { Tv, ShoppingCart, Briefcase, Coffee, Zap, Package, ArrowUpRight, ArrowDownRight } from 'lucide-react';
@@ -49,15 +48,15 @@ export const RecentTransactions = () => {
                 transition={{ delay: 0.4 + (index * 0.1) }}
                 className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className={`p-3 rounded-xl ${isIncome ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-600'}`}>
+                <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+                  <div className={`p-3 rounded-xl shrink-0 ${isIncome ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-600'}`}>
                     <Icon className="w-5 h-5" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-slate-900 truncate max-w-[160px] sm:max-w-[220px]">{tx.title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-slate-500">{new Date(tx.date).toLocaleDateString('id-ID')}</span>
-                      <Badge variant="default" className="text-[10px]">{tx.category}</Badge>
+                  <div className="min-w-0 overflow-hidden">
+                    <p className="font-semibold text-slate-900 truncate">{tx.title}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-xs text-slate-500 shrink-0">{new Date(tx.date).toLocaleDateString('id-ID')}</span>
+                      <span className="text-[10px] font-medium bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full inline-block truncate max-w-[100px]">{tx.category}</span>
                     </div>
                   </div>
                 </div>

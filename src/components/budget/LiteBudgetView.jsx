@@ -4,7 +4,7 @@ import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { useAppContext } from "../../context/AppContext";
-import { AlertTriangle, Plus, Target, Wallet, Save, Edit2, Trash2, Car, Utensils, Clapperboard, Zap, PiggyBank, Bot, ArrowRight, ChartPie } from "lucide-react";
+import { AlertTriangle, Plus, Target, Wallet, Save, Edit2, Trash2, Car, Utensils, Clapperboard, Zap, PiggyBank, Bot, ChartPie } from "lucide-react";
 import { PieChart as RechartsPieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { buildExpenseCategoryOptions, formatCategoryLabel, normalizeCategoryName } from "../../utils/categoryUtils";
 import { getNextUnusedBudgetColor } from "../../utils/budgetColors";
@@ -200,7 +200,6 @@ export const LiteBudgetView = () => {
   const isBudgetAlert = totalRemaining < 0;
   const overallPercentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
   const potentialSavings = Math.max(0, Number(user.monthlyIncome || 0) - Number(user.monthlyExpenses || 0) - totalSpent);
-  const aiSavings = Math.max(0, Math.round(totalSpent * 0.1));
 
   return (
     <div className="space-y-6">
@@ -209,11 +208,97 @@ export const LiteBudgetView = () => {
           <h1 className="text-2xl font-bold text-slate-900">Ringkasan Anggaran</h1>
           <p className="text-slate-500">Pantau batas pengeluaran dan tujuan Anda.</p>
         </div>
-        <Button onClick={openCreateBudgetModal} className="w-full sm:w-auto flex items-center justify-center gap-2">
-          <Plus className="w-4 h-4" />
-          Buat Anggaran
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          {pendingSuggestions.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => applyAllBudgetSuggestions(suggestionIncome, tabunganAmount)}
+              disabled={allocatableIncome <= 0}
+              className="w-full sm:w-auto flex items-center justify-center gap-2"
+            >
+              <Bot className="w-4 h-4" />
+              Saran Sistem
+            </Button>
+          )}
+          <Button onClick={openCreateBudgetModal} className="w-full sm:w-auto flex items-center justify-center gap-2">
+            <Plus className="w-4 h-4" />
+            Buat Anggaran
+          </Button>
+        </div>
       </div>
+
+      {/* Saran anggaran — dekat header agar mudah ditemukan */}
+      {pendingSuggestions.length > 0 && (
+        <Card>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Saran Anggaran Berdasarkan Pemasukan</h2>
+              <p className="text-sm text-slate-500">Kami merekomendasikan alokasi anggaran berdasarkan pemasukan bulanan Anda.</p>
+            </div>
+            <div className="w-full sm:w-auto flex items-center gap-2">
+              <Button
+                onClick={() => applyAllBudgetSuggestions(suggestionIncome, tabunganAmount)}
+                disabled={allocatableIncome <= 0}
+                className="text-sm w-full sm:w-auto"
+              >
+                Terapkan Semua
+              </Button>
+            </div>
+          </div>
+
+          {suggestionIncome <= 0 ? (
+            <p className="mt-4 text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+              Belum ada pemasukan bulan ini. Tambahkan transaksi <strong>Pemasukan</strong> dulu agar nominal saran terisi; kartu kategori di bawah menampilkan persentase alokasi.
+            </p>
+          ) : (
+            <div className="mt-4 text-sm text-slate-600 space-y-1">
+              <p>
+                Rumus: <span className="font-medium text-slate-800">Saran = % kategori × (Pemasukan − Tabungan)</span>
+              </p>
+              <p>
+                Pemasukan: <span className="font-semibold text-slate-900">{formatRp(suggestionIncome)}</span>
+                {" · "}
+                Tabungan: <span className="font-semibold text-slate-900">{formatRp(tabunganAmount)}</span>
+                {" · "}
+                Dasar alokasi: <span className="font-semibold text-primary-700">{formatRp(allocatableIncome)}</span>
+              </p>
+              {tabunganAmount > suggestionIncome && (
+                <p className="text-amber-700 text-xs">Tabungan melebihi pemasukan; saran kategori bernilai Rp 0 hingga pemasukan bertambah.</p>
+              )}
+            </div>
+          )}
+
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pendingSuggestions.map((s) => (
+              <div key={s.category} className="p-4 bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium">{formatCategoryLabel(s.category)}</div>
+                  <div className="text-xs text-slate-500">
+                    {allocatableIncome > 0 ? (
+                      <>
+                        {Math.round((s.percent || 0) * 100)}% × {formatRp(allocatableIncome)} = {formatRp(s.amount)}
+                      </>
+                    ) : (
+                      <>Alokasi: {Math.round((s.percent || 0) * 100)}% × (pemasukan − tabungan)</>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full sm:w-auto">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    disabled={s.amount <= 0}
+                    onClick={() => applyBudgetSuggestion(s.category, s.amount)}
+                  >
+                    Terapkan
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Buat Anggaran Baru">
         <form onSubmit={handleCreateBudget} className="space-y-4">
           <div>
@@ -478,120 +563,19 @@ export const LiteBudgetView = () => {
         </div>
       </Card>
 
-      {/* Saran anggaran — disembunyikan jika semua kategori sudah punya budget bulan ini */}
-      {pendingSuggestions.length > 0 && (
-        <Card>
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold">Saran Anggaran Berdasarkan Pemasukan</h2>
-              <p className="text-sm text-slate-500">Kami merekomendasikan alokasi anggaran berdasarkan pemasukan bulanan Anda.</p>
+      {/* Potensi Tabungan */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+        <Card className="border-none shadow-sm ring-1 ring-slate-100 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <PiggyBank className="w-5 h-5" />
             </div>
-            <div className="w-full sm:w-auto flex items-center gap-2">
-              <Button
-                onClick={() => applyAllBudgetSuggestions(suggestionIncome, tabunganAmount)}
-                disabled={allocatableIncome <= 0}
-                className="text-sm w-full sm:w-auto"
-              >
-                Terapkan Semua
-              </Button>
-            </div>
+            <span className="font-medium text-slate-700">Potensi Tabungan</span>
           </div>
-
-          {suggestionIncome <= 0 ? (
-            <p className="mt-4 text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-              Belum ada pemasukan bulan ini. Tambahkan transaksi <strong>Pemasukan</strong> dulu agar nominal saran terisi; kartu kategori di bawah menampilkan persentase alokasi.
-            </p>
-          ) : (
-            <div className="mt-4 text-sm text-slate-600 space-y-1">
-              <p>
-                Rumus: <span className="font-medium text-slate-800">Saran = % kategori × (Pemasukan − Tabungan)</span>
-              </p>
-              <p>
-                Pemasukan: <span className="font-semibold text-slate-900">{formatRp(suggestionIncome)}</span>
-                {" · "}
-                Tabungan: <span className="font-semibold text-slate-900">{formatRp(tabunganAmount)}</span>
-                {" · "}
-                Dasar alokasi: <span className="font-semibold text-primary-700">{formatRp(allocatableIncome)}</span>
-              </p>
-              {tabunganAmount > suggestionIncome && (
-                <p className="text-amber-700 text-xs">Tabungan melebihi pemasukan; saran kategori bernilai Rp 0 hingga pemasukan bertambah.</p>
-              )}
-            </div>
-          )}
-
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {pendingSuggestions.map((s) => (
-              <div key={s.category} className="p-4 bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-medium">{formatCategoryLabel(s.category)}</div>
-                  <div className="text-xs text-slate-500">
-                    {allocatableIncome > 0 ? (
-                      <>
-                        {Math.round((s.percent || 0) * 100)}% × {formatRp(allocatableIncome)} = {formatRp(s.amount)}
-                      </>
-                    ) : (
-                      <>Alokasi: {Math.round((s.percent || 0) * 100)}% × (pemasukan − tabungan)</>
-                    )}
-                  </div>
-                </div>
-                <div className="w-full sm:w-auto">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full sm:w-auto"
-                    disabled={s.amount <= 0}
-                    onClick={() => applyBudgetSuggestion(s.category, s.amount)}
-                  >
-                    Terapkan
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-3xl font-bold text-slate-900 mb-1">{formatRp(potentialSavings)}</p>
+          <p className="text-sm text-slate-500">Berdasarkan income, expense, dan anggaran tersimpan</p>
         </Card>
-      )}
-
-      {/* Bottom Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-        {/* Potensi Tabungan */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="md:col-span-1">
-          <Card className="h-full border-none shadow-sm ring-1 ring-slate-100 p-6 flex flex-col justify-center">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                <PiggyBank className="w-5 h-5" />
-              </div>
-              <span className="font-medium text-slate-700">Potensi Tabungan</span>
-            </div>
-            <p className="text-3xl font-bold text-slate-900 mb-2">{formatRp(potentialSavings)}</p>
-            <p className="text-sm font-medium text-green-500 flex items-center gap-1">Berdasarkan income, expense, dan anggaran tersimpan</p>
-          </Card>
-        </motion.div>
-
-        {/* Insight Finsight AI */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="md:col-span-2">
-          <Card className="h-full border-none shadow-sm ring-1 ring-slate-100 p-6 relative overflow-hidden">
-            <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
-              <Bot className="w-48 h-48" />
-            </div>
-            <div className="relative z-10">
-              <h3 className="text-slate-600 font-medium mb-3">Insight Finsight AI</h3>
-              <p className="text-slate-800 leading-relaxed mb-4">
-                {aiSavings > 0 ? (
-                  <>
-                    Kamu bisa menghemat sekitar <span className="text-primary-600 font-bold">{formatRp(aiSavings)}</span> jika membatasi makan di luar minggu ini. Mau kami buatkan rencana makan hemat?
-                  </>
-                ) : (
-                  <>Tambahkan transaksi pengeluaran dan anggaran yang lebih lengkap supaya rekomendasi hemat dari AI muncul lebih akurat.</>
-                )}
-              </p>
-              <button className="text-primary-600 font-semibold text-sm hover:text-primary-700 flex items-center gap-1 group">
-                Lihat Analisis AI
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </Card>
-        </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 };

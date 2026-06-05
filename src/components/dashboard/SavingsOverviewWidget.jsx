@@ -1,8 +1,7 @@
 import { motion } from "framer-motion";
 import { PiggyBank, ArrowRight, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Card } from "../ui/Card";
-import { Button } from "../ui/Button";
 import { useAppContext } from "../../context/AppContext";
 
 const formatCurrency = (value) =>
@@ -29,7 +28,6 @@ const progressValue = (saved, target) => {
 };
 
 export const SavingsOverviewWidget = () => {
-  const navigate = useNavigate();
   const { savingsGoals, savingsReady } = useAppContext();
 
   const totalTarget = savingsGoals.reduce((sum, g) => sum + Number(g.target_amount || 0), 0);
@@ -59,10 +57,10 @@ export const SavingsOverviewWidget = () => {
         ) : savingsGoals.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center py-4 gap-3">
             <p className="text-sm text-slate-500">Belum ada tujuan tabungan. Buat target pertama untuk mulai menabung.</p>
-            <Button type="button" onClick={() => navigate("/savings")} className="flex items-center gap-2">
+            <Link to="/savings" className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors">
               <Plus className="w-4 h-4" />
               Buat Tujuan Tabungan
-            </Button>
+            </Link>
           </div>
         ) : (
           <>
@@ -117,16 +115,13 @@ export const SavingsOverviewWidget = () => {
               )}
             </div>
 
-            <Button
-              type="button"
-              variant="ghost"
-              fullWidth
-              onClick={() => navigate("/savings")}
-              className="mt-4 flex items-center justify-center gap-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50"
+            <Link
+              to="/savings"
+              className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-xl transition-colors"
             >
               Kelola Tabungan
               <ArrowRight className="w-4 h-4" />
-            </Button>
+            </Link>
           </>
         )}
       </Card>
